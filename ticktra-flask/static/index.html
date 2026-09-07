@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ticktra — AI IT Helpdesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F0E8;
+    --slate: #2D3142;
+    --slate-light: #3d4257;
+    --teal: #00897B;
+    --teal-light: #E0F2F0;
+    --teal-dark: #006B61;
+    --surface: #FFFFFF;
+    --surface-2: #EDE8E0;
+    --border: #D8D2C8;
+    --text: #2D3142;
+    --text-muted: #6B6E80;
+    --text-light: #9699A8;
+    --red: #C62828;
+    --red-light: #FFEBEE;
+    --amber: #E65100;
+    --amber-light: #FFF3E0;
+    --green: #2E7D32;
+    --green-light: #E8F5E9;
+    --blue: #1565C0;
+    --blue-light: #E3F2FD;
+    --purple: #6A1B9A;
+    --purple-light: #F3E5F5;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(45,49,66,0.08), 0 1px 2px rgba(45,49,66,0.04);
+    --shadow-md: 0 4px 12px rgba(45,49,66,0.12);
+    --sidebar-w: 220px;
+    --topbar-h: 56px;
+    --font: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; }
+  #root { height: 100%; }
+  button { font-family: var(--font); cursor: pointer; border: none; background: none; }
+  input, select, textarea { font-family: var(--font); font-size: 14px; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* Layout */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--slate);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    transition: width 0.2s;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 18px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--teal);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: white;
+    flex-shrink: 0;
+  }
+  .logo-text { color: white; font-weight: 600; font-size: 15px; letter-spacing: -0.3px; }
+  .sidebar-role-label {
+    padding: 10px 20px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 8px;
+  }
+  .sidebar-nav { flex: 1; padding: 4px 12px 16px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: rgba(255,255,255,0.65);
+    font-size: 13.5px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.12s;
+    margin-bottom: 2px;
+    white-space: nowrap;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+  .nav-item.active { background: rgba(0,137,123,0.25); color: white; font-weight: 500; }
+  .nav-item .icon { width: 16px; text-align: center; flex-shrink: 0; opacity: 0.8; font-size: 14px; }
+  .nav-item.active .icon { opacity: 1; }
+
+  /* Main */
+  .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Topbar */
+  .topbar {
+    height: var(--topbar-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 50;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+  .role-switcher {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 4px 10px 4px 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    position: relative;
+  }
+  .role-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .role-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    min-width: 160px;
+    z-index: 200;
+    overflow: hidden;
+  }
+  .role-menu-item {
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.1s;
+  }
+  .role-menu-item:hover { background: var(--bg); }
+  .role-menu-item.selected { font-weight: 500; color: var(--teal); }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  /* Page content */
+  .page { flex: 1; overflow-y: auto; padding: 24px; }
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  .page-sub { color: var(--text-muted); font-size: 13px; margin-top: 3px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+  }
+  .card-p { padding: 20px; }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 14px; font-weight: 600; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 99px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .badge-open { background: var(--blue-light); color: var(--blue); }
+  .badge-open::before { background: var(--blue); }
+  .badge-in-progress { background: var(--amber-light); color: var(--amber); }
+  .badge-in-progress::before { background: var(--amber); }
+  .badge-resolved { background: var(--green-light); color: var(--green); }
+  .badge-resolved::before { background: var(--green); }
+  .badge-breached { background: var(--red-light); color: var(--red); }
+  .badge-breached::before { background: var(--red); }
+
+  /* Priority tags */
+  .priority { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--mono); }
+  .p1 { background: var(--red-light); color: var(--red); }
+  .p2 { background: var(--amber-light); color: var(--amber); }
+  .p3 { background: var(--green-light); color: var(--green); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: all 0.12s;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--teal); color: white; }
+  .btn-primary:hover { background: var(--teal-dark); }
+  .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+  .btn-secondary:hover { background: var(--surface-2); }
+  .btn-ghost { color: var(--text-muted); }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-danger:hover { background: #ffcdd2; }
+  .btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: 6px; }
+
+  /* Form elements */
+  .form-group { margin-bottom: 16px; }
+  .label { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+  .input, .select, .textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  .input:focus, .select:focus, .textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,137,123,0.1); }
+  .textarea { resize: vertical; min-height: 90px; }
+  .select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6E80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  /* Table */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th { text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  .table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: var(--bg); }
+
+  /* Ticket card */
+  .ticket-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.12s;
+    margin-bottom: 10px;
+  }
+  .ticket-card:hover { border-color: var(--teal); box-shadow: var(--shadow); }
+  .ticket-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .ticket-card-title { font-size: 13.5px; font-weight: 500; color: var(--text); flex: 1; }
+  .ticket-card-meta { display: flex; align-items: center; gap: 12px; }
+  .ticket-card-meta span { font-size: 12px; color: var(--text-muted); }
+
+  /* SLA timer */
+  .sla-timer { font-size: 12px; font-weight: 500; font-family: var(--mono); }
+  .sla-ok { color: var(--green); }
+  .sla-warn { color: var(--amber); }
+  .sla-breach { color: var(--red); }
+
+  /* Stat card */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .stat-label { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -1px; color: var(--text); }
+  .stat-trend { font-size: 12px; margin-top: 4px; }
+  .trend-up { color: var(--green); }
+  .trend-down { color: var(--red); }
+  .trend-flat { color: var(--text-muted); }
+
+  /* Chart bar */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { width: 130px; font-size: 12.5px; color: var(--text-muted); text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--bg); border-radius: 99px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: var(--teal); transition: width 0.4s; }
+  .bar-val { width: 36px; font-size: 12px; font-weight: 500; font-family: var(--mono); color: var(--text); }
+
+  /* Line chart (SVG placeholder) */
+  .chart-area { padding: 16px; }
+
+  /* Donut */
+  .donut-wrap { display: flex; align-items: center; gap: 24px; padding: 16px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Toggle */
+  .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+  .toggle {
+    width: 36px; height: 20px;
+    background: var(--border);
+    border-radius: 99px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--teal); }
+  .toggle::after {
+    content: '';
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on::after { transform: translateX(16px); }
+  .toggle-label { font-size: 13px; color: var(--text); }
+
+  /* Chat widget */
+  .chat-fab {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    width: 52px; height: 52px;
+    background: var(--teal);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,137,123,0.4);
+    z-index: 500;
+    transition: transform 0.15s;
+    color: white;
+    font-size: 22px;
+  }
+  .chat-fab:hover { transform: scale(1.05); }
+  .chat-drawer {
+    position: fixed;
+    bottom: 88px; right: 24px;
+    width: 340px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(45,49,66,0.18);
+    z-index: 499;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    max-height: 480px;
+  }
+  .chat-header {
+    background: var(--slate);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chat-avatar {
+    width: 32px; height: 32px;
+    background: var(--teal);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .chat-header-info { flex: 1; }
+  .chat-header-name { color: white; font-size: 13.5px; font-weight: 500; }
+  .chat-header-status { color: rgba(255,255,255,0.5); font-size: 11.5px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { max-width: 84%; }
+  .chat-msg.bot { align-self: flex-start; }
+  .chat-msg.user { align-self: flex-end; }
+  .chat-bubble {
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .chat-msg.bot .chat-bubble { background: var(--bg); color: var(--text); border-bottom-left-radius: 4px; }
+  .chat-msg.user .chat-bubble { background: var(--teal); color: white; border-bottom-right-radius: 4px; }
+  .chat-quick-replies { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
+  .quick-reply {
+    padding: 6px 12px;
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    border-radius: 99px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid rgba(0,137,123,0.2);
+    transition: background 0.1s;
+  }
+  .quick-reply:hover { background: rgba(0,137,123,0.15); }
+  .chat-outcome {
+    margin: 4px 0;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .chat-outcome.auto { background: var(--green-light); color: var(--green); }
+  .chat-outcome.escalated { background: var(--amber-light); color: var(--amber); }
+  .chat-input-row {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: center;
+  }
+  .chat-input {
+    flex: 1; padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 13px;
+    outline: none;
+    background: var(--bg);
+  }
+  .chat-input:focus { border-color: var(--teal); }
+  .chat-send {
+    width: 32px; height: 32px;
+    background: var(--teal);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* KB */
+  .kb-search {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .kb-search input {
+    flex: 1; padding: 12px 16px;
+    border: none; outline: none;
+    font-size: 14px; background: transparent;
+  }
+  .kb-search-btn {
+    padding: 0 16px;
+    background: var(--teal);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    font-family: var(--font);
+    font-weight: 500;
+  }
+  .kb-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .kb-cat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.12s;
+  }
+  .kb-cat:hover { border-color: var(--teal); background: var(--teal-light); }
+  .kb-cat-icon { font-size: 24px; margin-bottom: 8px; }
+  .kb-cat-name { font-size: 13px; font-weight: 500; }
+  .kb-cat-count { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+
+  /* Inbox SLA rows */
+  .inbox-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    gap: 12px;
+  }
+  .inbox-row:hover { background: var(--bg); }
+  .inbox-row:last-child { border-bottom: none; }
+  .sla-bar { width: 4px; height: 36px; border-radius: 99px; flex-shrink: 0; }
+  .sla-bar-green { background: var(--green); }
+  .sla-bar-amber { background: var(--amber); }
+  .sla-bar-red { background: var(--red); }
+  .inbox-info { flex: 1; min-width: 0; }
+  .inbox-title { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inbox-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Agent ticket view split */
+  .ticket-split { display: flex; gap: 0; height: 100%; overflow: hidden; }
+  .ticket-thread { flex: 1; overflow-y: auto; padding: 20px; border-right: 1px solid var(--border); }
+  .ticket-sidebar-panel { width: 280px; flex-shrink: 0; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .thread-msg {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .thread-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .thread-msg-body { flex: 1; }
+  .thread-msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .thread-msg-name { font-size: 13px; font-weight: 500; }
+  .thread-msg-time { font-size: 11.5px; color: var(--text-muted); }
+  .thread-msg-text {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .thread-msg.agent .thread-msg-text { background: var(--teal-light); border-color: rgba(0,137,123,0.15); }
+  .internal-note { background: #FFFDE7; border: 1px solid #F9A825; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #5D4037; }
+  .note-label { font-size: 10.5px; font-weight: 600; color: #F57F17; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+
+  /* Integration tiles */
+  .integration-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .integration-logo {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .integration-info { flex: 1; }
+  .integration-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .integration-desc { font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px; }
+  .connected-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; color: var(--green); background: var(--green-light); padding: 3px 8px; border-radius: 99px; }
+  .disconnected-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; color: var(--text-muted); background: var(--bg); padding: 3px 8px; border-radius: 99px; border: 1px solid var(--border); }
+
+  /* Markdown editor */
+  .md-editor { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .md-toolbar { padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; gap: 4px; }
+  .md-btn { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; font-family: var(--mono); }
+  .md-btn:hover { background: var(--surface); color: var(--text); }
+  .md-content { padding: 12px 14px; min-height: 200px; font-size: 13.5px; line-height: 1.7; outline: none; }
+
+  /* Color swatch */
+  .color-swatch-row { display: flex; align-items: center; gap: 10px; }
+  .color-swatch { width: 36px; height: 36px; border-radius: var(--radius); border: 2px solid var(--border); cursor: pointer; }
+
+  /* Breadcrumb */
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
+  .breadcrumb span { cursor: pointer; }
+  .breadcrumb span:hover { color: var(--teal); }
+  .breadcrumb .sep { opacity: 0.4; }
+
+  /* Date range tabs */
+  .date-tabs { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; gap: 2px; }
+  .date-tab { padding: 5px 12px; border-radius: 5px; font-size: 12.5px; font-weight: 500; cursor: pointer; color: var(--text-muted); transition: all 0.1s; }
+  .date-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+  /* Empty state */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; }
+  .empty-icon { font-size: 36px; margin-bottom: 14px; opacity: 0.5; }
+  .empty-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--text-muted); max-width: 260px; }
+
+  /* Checkbox */
+  .checkbox { width: 16px; height: 16px; border: 1.5px solid var(--border); border-radius: 4px; cursor: pointer; appearance: none; transition: all 0.1s; flex-shrink: 0; }
+  .checkbox:checked { background: var(--teal); border-color: var(--teal); }
+
+  /* Tag */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* Section label */
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; }
+
+  /* Helpful thumbs */
+  .thumbs-row { display: flex; align-items: center; gap: 8px; }
+  .thumb-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; cursor: pointer; transition: all 0.1s; background: var(--surface); }
+  .thumb-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  /* Notification row */
+  .notif-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .notif-row:last-child { border-bottom: none; }
+
+  /* Business hours */
+  .biz-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .biz-day { width: 90px; font-size: 13px; color: var(--text-muted); }
+
+  /* Webhook */
+  .event-check { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 13px; }
+
+  /* Scroll helpers */
+  .flex-col { display: flex; flex-direction: column; }
+  .gap-3 { gap: 12px; }
+  .gap-4 { gap: 16px; }
+  .gap-6 { gap: 24px; }
+  .mt-4 { margin-top: 16px; }
+  .mt-6 { margin-top: 24px; }
+  .mb-2 { margin-bottom: 8px; }
+  .mb-4 { margin-bottom: 16px; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .flex-1 { flex: 1; }
+  .text-sm { font-size: 13px; }
+  .text-xs { font-size: 11.5px; }
+  .text-muted { color: var(--text-muted); }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
+  .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .w-full { width: 100%; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 56px; }
+    .sidebar .logo-text, .sidebar .nav-item span, .sidebar .sidebar-role-label { display: none; }
+    .nav-item { justify-content: center; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .ticket-split { flex-direction: column; }
+    .ticket-sidebar-panel { width: 100%; border-right: none; border-top: 1px solid var(--border); }
+  }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script id="ticktra-app-source" type="text/plain">
+const { useState, useEffect, useRef } = React;
+
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+// Data below is served by the Flask backend (see app.py) via /api/bootstrap
+// and injected as window.__INITIAL__ before this script runs (see the
+// loader script at the bottom of the page). Nothing here is hardcoded
+// anymore; new tickets/signups are persisted via /api/*.
+const INITIAL = window.__INITIAL__;
+const TICKETS = INITIAL.tickets;
+const KB_ARTICLES = INITIAL.kb_articles;
+const USERS = INITIAL.users;
+const CURRENT_USER = INITIAL.current_user;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    method: options.method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+const ANALYTICS = {
+  ticketVolume: [12,18,14,22,27,19,15,24,31,28,22,19,25,30,26,18,14,21,29,33,25,18,16,23,31,28,22,19,24,29],
+  resolutionRate: 94.2,
+  avgHandleTime: '18m',
+  slaCompliance: 91.7,
+  categories: [
+    { name: 'Account Lockout', count: 38 },
+    { name: 'Password Reset', count: 52 },
+    { name: 'Access Request', count: 29 },
+    { name: 'Software', count: 17 },
+    { name: 'Hardware', count: 11 },
+    { name: 'Other', count: 8 },
+  ],
+  aiVsAgent: { ai: 68, agent: 32 },
+};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function getSLAStatus(deadline) {
+  const diff = new Date(deadline) - new Date();
+  if (diff < 0) return 'breach';
+  if (diff < 2 * 60 * 60 * 1000) return 'warn';
+  return 'ok';
+}
+function formatSLA(deadline) {
+  const diff = new Date(deadline) - new Date();
+  if (diff < 0) {
+    const mins = Math.floor(Math.abs(diff) / 60000);
+    return `Breached ${mins}m ago`;
+  }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  return h > 0 ? `${h}h ${m}m left` : `${m}m left`;
+}
+function initials(name) { return name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase(); }
+function relativeTime(iso) {
+  const diff = new Date() - new Date(iso);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 2) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+
+// ─── REUSABLE COMPONENTS ──────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const labels = { open: 'Open', 'in-progress': 'In Progress', resolved: 'Resolved', breached: 'SLA Breached' };
+  return <span className={`badge badge-${status}`}>{labels[status] || status}</span>;
+}
+function PriorityTag({ priority }) {
+  return <span className={`priority ${priority.toLowerCase()}`}>{priority}</span>;
+}
+function SLATimer({ deadline }) {
+  const status = getSLAStatus(deadline);
+  const cls = status === 'breach' ? 'sla-breach' : status === 'warn' ? 'sla-warn' : 'sla-ok';
+  return <span className={`sla-timer ${cls}`}>{formatSLA(deadline)}</span>;
+}
+function StatCard({ label, value, trend, sub }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-label">{label}</div>
+      <div className="stat-value">{value}</div>
+      {trend && <div className={`stat-trend ${trend === 'up' ? 'trend-up' : trend === 'down' ? 'trend-down' : 'trend-flat'}`}>
+        {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'} {sub}
+      </div>}
+    </div>
+  );
+}
+function EmptyState({ icon, title, sub, cta, onClick }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-icon">{icon}</div>
+      <div className="empty-title">{title}</div>
+      <div className="empty-sub">{sub}</div>
+      {cta && <button className="btn btn-primary" style={{marginTop:16}} onClick={onClick}>{cta}</button>}
+    </div>
+  );
+}
+function Toggle({ on, onChange }) {
+  return <div className={`toggle ${on?'on':''}`} onClick={()=>onChange(!on)} />;
+}
+function TicketCard({ ticket, onClick }) {
+  return (
+    <div className="ticket-card" onClick={onClick}>
+      <div className="ticket-card-top">
+        <div>
+          <div className="ticket-card-title">{ticket.title}</div>
+          <div style={{display:'flex',gap:8,marginTop:6,alignItems:'center'}}>
+            <StatusBadge status={ticket.status} />
+            <PriorityTag priority={ticket.priority} />
+            <span className="tag">{ticket.category}</span>
+          </div>
+        </div>
+      </div>
+      <div className="ticket-card-meta">
+        <span>{ticket.id}</span>
+        <span>{relativeTime(ticket.created)}</span>
+        {ticket.status !== 'resolved' && <SLATimer deadline={ticket.sla} />}
+      </div>
+    </div>
+  );
+}
+
+// ─── PAGES ────────────────────────────────────────────────────────────────────
+
+// 1. TICKET PORTAL
+function TicketPortal({ setActivePage }) {
+  const [showNew, setShowNew] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [form, setForm] = useState({ title:'', desc:'', cat:'Password Reset' });
+  const [tickets, setTickets] = useState(TICKETS);
+  const [update, setUpdate] = useState('');
+
+  if (selected) {
+    const t = tickets.find(x=>x.id===selected);
+    return (
+      <div style={{maxWidth:700}}>
+        <button className="btn btn-ghost btn-sm" style={{marginBottom:16}} onClick={()=>setSelected(null)}>← Back to tickets</button>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
+          <div>
+            <h2 style={{fontSize:17,fontWeight:600}}>{t.title}</h2>
+            <div style={{display:'flex',gap:8,marginTop:6}}>
+              <StatusBadge status={t.status} />
+              <PriorityTag priority={t.priority} />
+              <span className="tag">{t.category}</span>
+              <span style={{fontSize:12,color:'var(--text-muted)'}}>#{t.id}</span>
+            </div>
+          </div>
+          {t.status !== 'resolved' && <div style={{marginLeft:'auto'}}><SLATimer deadline={t.sla} /></div>}
+        </div>
+        <div className="card" style={{marginBottom:16}}>
+          {t.messages.map((m,i)=>(
+            <div key={i} style={{padding:'14px 18px',borderBottom:i<t.messages.length-1?'1px solid var(--border)':'none'}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                <div className="thread-avatar" style={{width:26,height:26,background:m.from==='agent'?'var(--teal)':'var(--slate)',color:'white',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:600}}>
+                  {initials(m.name)}
+                </div>
+                <span style={{fontSize:13,fontWeight:500}}>{m.name}</span>
+                <span style={{fontSize:11.5,color:'var(--text-muted)'}}>{m.time}</span>
+                {m.from==='agent'&&<span style={{fontSize:11,background:'var(--teal-light)',color:'var(--teal-dark)',padding:'1px 7px',borderRadius:99,fontWeight:500}}>Agent</span>}
+              </div>
+              <p style={{fontSize:13.5,color:'var(--text)',paddingLeft:34}}>{m.text}</p>
+            </div>
+          ))}
+        </div>
+        {t.status !== 'resolved' && (
+          <div className="card card-p">
+            <div className="section-label" style={{marginBottom:10}}>Add an update</div>
+            <textarea className="textarea" value={update} onChange={e=>setUpdate(e.target.value)} placeholder="Describe what you're seeing..." rows={3} />
+            <div style={{display:'flex',gap:8,marginTop:10}}>
+              <button className="btn btn-primary btn-sm" onClick={()=>{
+                if(!update.trim()) return;
+                api(`/api/tickets/${t.id}/messages`, { method:'POST', body:{ text: update } })
+                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?ticket:x)))
+                  .catch(err=>alert(err.message));
+                setUpdate('');
+              }}>Send update</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>{
+                api(`/api/tickets/${t.id}/resolve`, { method:'POST' })
+                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?ticket:x)))
+                  .catch(err=>alert(err.message));
+              }}>Close ticket</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="page-header flex justify-between items-center">
+        <div>
+          <div className="page-title">My tickets</div>
+          <div className="page-sub">Track and manage your IT requests</div>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowNew(!showNew)}>+ New ticket</button>
+      </div>
+
+      {showNew && (
+        <div className="card card-p" style={{maxWidth:560,marginBottom:20}}>
+          <div className="card-title" style={{marginBottom:16}}>Submit a request</div>
+          <div className="form-group">
+            <label className="label">Title</label>
+            <input className="input" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Brief summary of the issue" />
+          </div>
+          <div className="form-group">
+            <label className="label">Category</label>
+            <select className="select" value={form.cat} onChange={e=>setForm({...form,cat:e.target.value})}>
+              {['Password Reset','Account Lockout','Access Request','Other'].map(c=><option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="label">Description</label>
+            <textarea className="textarea" value={form.desc} onChange={e=>setForm({...form,desc:e.target.value})} placeholder="What's happening? Include any error messages." />
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-primary" onClick={()=>{
+              if(!form.title) return;
+              api('/api/tickets', { method:'POST', body: form })
+                .then(({ticket})=>{
+                  setTickets(ts=>[ticket, ...ts]);
+                  setForm({title:'',desc:'',cat:'Password Reset'});
+                  setShowNew(false);
+                })
+                .catch(err=>alert(err.message));
+            }}>Submit</button>
+            <button className="btn btn-secondary" onClick={()=>setShowNew(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {tickets.length === 0
+        ? <EmptyState icon="🎉" title="All clear" sub="No open tickets. Submit a new request if you need IT support." cta="New ticket" onClick={()=>setShowNew(true)} />
+        : tickets.map(t=><TicketCard key={t.id} ticket={t} onClick={()=>setSelected(t.id)} />)
+      }
+    </div>
+  );
+}
+
+// 2. CHAT WIDGET (floating)
+function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [msgs, setMsgs] = useState([
+    {from:'bot',text:"Hi! I'm Ticktra. What can I help you with today?"}
+  ]);
+  const [input, setInput] = useState('');
+  const [outcome, setOutcome] = useState(null);
+
+  const flows = {
+    'Reset my password': [
+      {from:'bot',text:"Sure — I can handle this right away. Which account needs the reset?"},
+      {from:'bot',text:"Got it. I've sent a password reset link to the email on file. Check your inbox."},
+    ],
+    'Unlock my account': [
+      {from:'bot',text:"I can see your account has been locked. I'll unlock it now — this takes about 30 seconds."},
+      {from:'bot',text:"Done. Your account is unlocked. Try logging in again."},
+    ],
+    'Request access': [
+      {from:'bot',text:"Which resource do you need access to? (e.g. SharePoint site, shared inbox, Teams channel)"},
+    ],
+    'Something else': [
+      {from:'bot',text:"No problem — I'll raise a ticket for an agent. Can you briefly describe the issue?"},
+    ]
+  };
+
+  const quickReplies = step===0 ? ['Reset my password','Unlock my account','Request access','Something else'] : [];
+
+  const handleQuick = (choice) => {
+    const newMsgs = [...msgs, {from:'user',text:choice}];
+    const flow = flows[choice];
+    if(flow) {
+      flow.forEach((m,i)=>setTimeout(()=>setMsgs(prev=>[...prev,m]),400*(i+1)));
+      if(choice==='Reset my password'||choice==='Unlock my account') setTimeout(()=>setOutcome('auto'),900);
+      if(choice==='Something else') setTimeout(()=>setOutcome('escalated'),900);
+    }
+    setMsgs(newMsgs);
+    setStep(s=>s+1);
+  };
+
+  return (
+    <>
+      <div className="chat-fab" onClick={()=>setOpen(o=>!o)}>
+        {open ? '✕' : '💬'}
+      </div>
+      {open && (
+        <div className="chat-drawer">
+          <div className="chat-header">
+            <div className="chat-avatar">🤖</div>
+            <div className="chat-header-info">
+              <div className="chat-header-name">Ticktra Assistant</div>
+              <div className="chat-header-status">● Online</div>
+            </div>
+            <button style={{color:'rgba(255,255,255,0.5)',fontSize:16,background:'none',border:'none',cursor:'pointer'}} onClick={()=>setOpen(false)}>✕</button>
+          </div>
+          <div className="chat-messages">
+            {msgs.map((m,i)=>(
+              <div key={i} className={`chat-msg ${m.from}`}>
+                <div className="chat-bubble">{m.text}</div>
+              </div>
+            ))}
+            {outcome==='auto' && <div className="chat-outcome auto">✓ Handled automatically</div>}
+            {outcome==='escalated' && <div className="chat-outcome escalated">⟳ Escalated to agent</div>}
+          </div>
+          {quickReplies.length > 0 && (
+            <div className="chat-quick-replies">
+              {quickReplies.map(r=><button key={r} className="quick-reply" onClick={()=>handleQuick(r)}>{r}</button>)}
+            </div>
+          )}
+          <div className="chat-input-row">
+            <input className="chat-input" value={input} onChange={e=>setInput(e.target.value)} placeholder="Type a message..." onKeyDown={e=>{if(e.key==='Enter'&&input.trim()){setMsgs(prev=>[...prev,{from:'user',text:input}]);setInput('');}}} />
+            <div className="chat-send" onClick={()=>{if(input.trim()){setMsgs(prev=>[...prev,{from:'user',text:input}]);setInput('');}}}>➤</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// 3. KNOWLEDGE BASE
+function KnowledgeBase() {
+  const [search, setSearch] = useState('');
+  const [article, setArticle] = useState(null);
+  const [voted, setVoted] = useState(false);
+  const cats = [...new Set(KB_ARTICLES.map(a=>a.cat))];
+  const catIcons = {'Account Access':'🔐','Software':'💻','Hardware':'🖨️','Onboarding':'🌱'};
+  const filtered = search ? KB_ARTICLES.filter(a=>a.title.toLowerCase().includes(search.toLowerCase())) : null;
+
+  if(article) {
+    const a = KB_ARTICLES.find(x=>x.id===article);
+    return (
+      <div style={{maxWidth:660}}>
+        <div className="breadcrumb">
+          <span onClick={()=>setArticle(null)}>Knowledge base</span>
+          <span className="sep">/</span>
+          <span>{a.cat}</span>
+          <span className="sep">/</span>
+          <span style={{color:'var(--text)',fontWeight:500}}>{a.title}</span>
+        </div>
+        <h2 style={{fontSize:20,fontWeight:600,marginBottom:16}}>{a.title}</h2>
+        <div style={{display:'flex',gap:10,marginBottom:20}}>
+          <span className="tag">{a.cat}</span>
+          <span style={{fontSize:12,color:'var(--text-muted)'}}>{a.reads} views · {a.helpful}% found this helpful</span>
+        </div>
+        <div className="card card-p" style={{fontSize:14,lineHeight:1.8}}>
+          <p style={{marginBottom:12}}><strong>Overview</strong></p>
+          <p style={{marginBottom:12}}>This guide explains how to {a.title.toLowerCase()}. Follow the steps below — most users can resolve this in under 5 minutes without contacting IT support.</p>
+          <p style={{marginBottom:8}}><strong>Steps</strong></p>
+          <ol style={{paddingLeft:20,display:'flex',flexDirection:'column',gap:8}}>
+            <li>Open your browser and navigate to <span style={{fontFamily:'var(--mono)',fontSize:13,background:'var(--bg)',padding:'1px 6px',borderRadius:4}}>account.microsoft.com</span></li>
+            <li>Click <strong>Security info</strong> from the left menu.</li>
+            <li>Select <strong>Change password</strong> and follow the prompts.</li>
+            <li>Your new password must be at least 12 characters and include a number and a symbol.</li>
+            <li>If prompted, verify with your authenticator app or SMS code.</li>
+          </ol>
+          <div style={{marginTop:16,padding:'12px 16px',background:'var(--teal-light)',borderRadius:'var(--radius)',fontSize:13}}>
+            💡 Still stuck? Submit a ticket and an agent will help within 2 hours.
+          </div>
+        </div>
+        <div style={{marginTop:20}}>
+          <div className="section-label" style={{marginBottom:10}}>Was this helpful?</div>
+          <div className="thumbs-row">
+            <button className="thumb-btn" onClick={()=>setVoted(true)}>👍 Yes</button>
+            <button className="thumb-btn" onClick={()=>setVoted(true)}>👎 No</button>
+            {voted && <span style={{fontSize:12,color:'var(--text-muted)'}}>Thanks for the feedback!</span>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">Knowledge base</div>
+        <div className="page-sub">Find answers to common IT questions without raising a ticket</div>
+      </div>
+      <div className="kb-search" style={{maxWidth:520,marginBottom:28}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search articles... e.g. reset password, VPN" />
+        <button className="kb-search-btn">Search</button>
+      </div>
+      {filtered ? (
+        <div>
+          <div style={{marginBottom:12,fontSize:13,color:'var(--text-muted)'}}>{filtered.length} result{filtered.length!==1?'s':''} for "{search}"</div>
+          {filtered.map(a=>(
+            <div key={a.id} className="card card-p" style={{marginBottom:10,cursor:'pointer'}} onClick={()=>setArticle(a.id)}>
+              <div style={{fontWeight:500,marginBottom:4}}>{a.title}</div>
+              <div style={{fontSize:12,color:'var(--text-muted)'}}>{a.cat} · {a.reads} views</div>
+            </div>
+          ))}
+          {filtered.length===0 && <EmptyState icon="🔍" title="No results" sub={`No articles match "${search}". Submit a ticket and an agent will help.`} />}
+        </div>
+      ) : (
+        <>
+          <div className="section-label" style={{marginBottom:12}}>Categories</div>
+          <div className="kb-cat-grid" style={{marginBottom:28}}>
+            {cats.map(c=>(
+              <div key={c} className="kb-cat" onClick={()=>setSearch(c)}>
+                <div className="kb-cat-icon">{catIcons[c]||'📄'}</div>
+                <div className="kb-cat-name">{c}</div>
+                <div className="kb-cat-count">{KB_ARTICLES.filter(a=>a.cat===c).length} articles</div>
+              </div>
+            ))}
+          </div>
+          <div className="section-label" style={{marginBottom:12}}>Popular articles</div>
+          {KB_ARTICLES.slice(0,5).map(a=>(
+            <div key={a.id} className="flex items-center" style={{padding:'12px 16px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius)',marginBottom:8,cursor:'pointer'}} onClick={()=>setArticle(a.id)}>
+              <div className="flex-1">
+                <div style={{fontSize:13.5,fontWeight:500}}>{a.title}</div>
+                <div style={{fontSize:12,color:'var(--text-muted)',marginTop:2}}>{a.cat}</div>
+              </div>
+              <span style={{fontSize:12,color:'var(--text-muted)'}}>{a.helpful}% helpful</span>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+// 4. ACCOUNT/PROFILE
+function AccountProfile() {
+  const [notifs, setNotifs] = useState({email:true,slack:false});
+  return (
+    <div style={{maxWidth:560}}>
+      <div className="page-header">
+        <div className="page-title">My account</div>
+        <div className="page-sub">Your profile and preferences</div>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-header"><span className="card-title">Profile</span></div>
+        <div className="card-p">
+          <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:20}}>
+            <div className="avatar" style={{width:52,height:52,fontSize:18}}>SC</div>
+            <div>
+              <div style={{fontWeight:600,fontSize:15}}>Sarah Chen</div>
+              <div style={{fontSize:13,color:'var(--text-muted)'}}>sarah.chen@acme.co.uk</div>
+            </div>
+          </div>
+          {[['Department','Finance'],['Role','End User'],['Microsoft 365','Connected']].map(([l,v])=>(
+            <div key={l} className="flex justify-between items-center" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+              <span style={{fontSize:13,color:'var(--text-muted)'}}>{l}</span>
+              <span style={{fontSize:13,fontWeight:500}}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-header"><span className="card-title">Notifications</span></div>
+        <div className="card-p">
+          <div className="notif-row">
+            <div>
+              <div style={{fontSize:13.5,fontWeight:500}}>Email updates</div>
+              <div style={{fontSize:12,color:'var(--text-muted)'}}>Ticket status changes and replies</div>
+            </div>
+            <Toggle on={notifs.email} onChange={v=>setNotifs({...notifs,email:v})} />
+          </div>
+          <div className="notif-row">
+            <div>
+              <div style={{fontSize:13.5,fontWeight:500}}>Slack messages</div>
+              <div style={{fontSize:12,color:'var(--text-muted)'}}>Notifications in your Slack workspace</div>
+            </div>
+            <Toggle on={notifs.slack} onChange={v=>setNotifs({...notifs,slack:v})} />
+          </div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><span className="card-title">Recent tickets</span></div>
+        {TICKETS.slice(0,5).map((t,i)=>(
+          <div key={t.id} style={{padding:'12px 20px',borderBottom:i<4?'1px solid var(--border)':'none',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:500,marginBottom:3}}>{t.title}</div>
+              <div style={{display:'flex',gap:8}}><StatusBadge status={t.status} /><span style={{fontSize:12,color:'var(--text-muted)'}}>{relativeTime(t.created)}</span></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 5. AGENT TICKET INBOX
+function AgentInbox({ setActivePage, setSelectedTicket }) {
+  const [filter, setFilter] = useState({ priority:'all', cat:'all', assigned:'all' });
+  const [selected, setSelected] = useState([]);
+
+  const open = TICKETS.filter(t=>t.status!=='resolved');
+  const filtered = open.filter(t=>{
+    if(filter.priority!=='all'&&t.priority!==filter.priority) return false;
+    if(filter.cat!=='all'&&t.category!==filter.cat) return false;
+    if(filter.assigned==='unassigned'&&t.assigned) return false;
+    if(filter.assigned==='assigned'&&!t.assigned) return false;
+    return true;
+  });
+  const sorted = [...filtered].sort((a,b)=>{
+    const sa = getSLAStatus(a.sla); const sb = getSLAStatus(b.sla);
+    const rank = {breach:0,warn:1,ok:2};
+    return rank[sa]-rank[sb];
+  });
+
+  const toggleSelect = (id) => setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
+
+  return (
+    <div>
+      <div className="page-header flex justify-between items-center">
+        <div>
+          <div className="page-title">Inbox</div>
+          <div className="page-sub">{open.length} open tickets · {open.filter(t=>getSLAStatus(t.sla)==='breach').length} SLA breached</div>
+        </div>
+        {selected.length>0 && (
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-secondary btn-sm">Assign to me ({selected.length})</button>
+            <button className="btn btn-secondary btn-sm">Close selected</button>
+          </div>
+        )}
+      </div>
+      <div className="filter-bar">
+        <select className="select" style={{width:'auto',padding:'6px 28px 6px 10px'}} value={filter.priority} onChange={e=>setFilter({...filter,priority:e.target.value})}>
+          <option value="all">All priorities</option>
+          <option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option>
+        </select>
+        <select className="select" style={{width:'auto',padding:'6px 28px 6px 10px'}} value={filter.cat} onChange={e=>setFilter({...filter,cat:e.target.value})}>
+          <option value="all">All categories</option>
+          {['Password Reset','Account Lockout','Access Request','Other'].map(c=><option key={c}>{c}</option>)}
+        </select>
+        <select className="select" style={{width:'auto',padding:'6px 28px 6px 10px'}} value={filter.assigned} onChange={e=>setFilter({...filter,assigned:e.target.value})}>
+          <option value="all">All tickets</option>
+          <option value="assigned">Assigned</option>
+          <option value="unassigned">Unassigned</option>
+        </select>
+      </div>
+      <div className="card">
+        {sorted.length === 0
+          ? <EmptyState icon="✅" title="Queue is clear" sub="All tickets are resolved or filtered out." />
+          : sorted.map(t=>{
+            const slaS = getSLAStatus(t.sla);
+            const barCls = slaS==='breach'?'sla-bar-red':slaS==='warn'?'sla-bar-amber':'sla-bar-green';
+            return (
+              <div key={t.id} className="inbox-row" onClick={()=>{setSelectedTicket(t.id);setActivePage('agent-ticket');}}>
+                <input type="checkbox" className="checkbox" checked={selected.includes(t.id)} onChange={()=>toggleSelect(t.id)} onClick={e=>e.stopPropagation()} />
+                <div className={`sla-bar ${barCls}`} />
+                <div className="inbox-info">
+                  <div className="inbox-title">{t.title}</div>
+                  <div className="inbox-sub">{t.category} · {t.user.name} · {relativeTime(t.created)}</div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:5}}>
+                  <div style={{display:'flex',gap:6}}><PriorityTag priority={t.priority}/><StatusBadge status={t.status}/></div>
+                  <SLATimer deadline={t.sla} />
+                </div>
+                {!t.assigned && <span style={{fontSize:11,background:'var(--bg)',border:'1px solid var(--border)',padding:'2px 8px',borderRadius:99,color:'var(--text-muted)',whiteSpace:'nowrap'}}>Unassigned</span>}
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+// 6. AGENT TICKET VIEW
+function AgentTicketView({ ticketId, setActivePage }) {
+  const [tickets, setTickets] = useState(TICKETS);
+  const [note, setNote] = useState('');
+  const [noteText, setNoteText] = useState('');
+  const t = tickets.find(x=>x.id===ticketId) || tickets[0];
+  const [priority, setPriority] = useState(t.priority);
+  const [status, setStatus] = useState(t.status);
+
+  return (
+    <div style={{height:'calc(100vh - var(--topbar-h))',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{padding:'12px 20px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:12,background:'var(--surface)',flexShrink:0}}>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setActivePage('agent-inbox')}>← Inbox</button>
+        <span style={{fontWeight:600,fontSize:15,flex:1}}>{t.title}</span>
+        <span className="font-medium text-sm" style={{color:'var(--text-muted)'}}>{t.id}</span>
+        <button className="btn btn-primary btn-sm" onClick={()=>{
+          setTickets(ts=>ts.map(x=>x.id===t.id?{...x,status:'resolved'}:x));
+          setStatus('resolved');
+          alert('Resolved and pushed to Knowledge Hub.');
+        }}>Resolve & document</button>
+      </div>
+      <div className="ticket-split" style={{flex:1,overflow:'hidden'}}>
+        <div className="ticket-thread">
+          <div className="section-label" style={{marginBottom:16}}>Thread</div>
+          {t.messages.map((m,i)=>(
+            <div key={i} className={`thread-msg ${m.from}`} style={{marginBottom:16}}>
+              <div className="thread-avatar" style={{background:m.from==='agent'?'var(--teal)':'var(--slate)',color:'white'}}>
+                {initials(m.name)}
+              </div>
+              <div className="thread-msg-body">
+                <div className="thread-msg-header">
+                  <span className="thread-msg-name">{m.name}</span>
+                  <span className="thread-msg-time">{m.time}</span>
+                  {m.from==='agent'&&<span style={{fontSize:11,background:'var(--teal-light)',color:'var(--teal-dark)',padding:'1px 7px',borderRadius:99,fontWeight:500}}>Agent</span>}
+                </div>
+                <div className={`thread-msg-text ${m.from}`}>{m.text}</div>
+              </div>
+            </div>
+          ))}
+          <hr className="divider" />
+          <div className="section-label" style={{marginBottom:10}}>Reply</div>
+          <textarea className="textarea" value={note} onChange={e=>setNote(e.target.value)} placeholder="Reply to requester..." rows={3} style={{marginBottom:8}} />
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-primary btn-sm" onClick={()=>{
+              if(!note.trim()) return;
+              setTickets(ts=>ts.map(x=>x.id===t.id?{...x,messages:[...x.messages,{from:'agent',name:'Alex M.',time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),text:note}]}:x));
+              setNote('');
+            }}>Send reply</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>{
+              if(!noteText.trim()) {setNoteText(note||'Add internal note here...');setNote('');}
+            }}>Add internal note</button>
+          </div>
+          {noteText && (
+            <div className="internal-note" style={{marginTop:12}}>
+              <div className="note-label">Internal note</div>
+              <textarea style={{width:'100%',border:'none',background:'transparent',resize:'vertical',fontSize:13,fontFamily:'var(--font)',outline:'none'}} value={noteText} onChange={e=>setNoteText(e.target.value)} rows={3} />
+            </div>
+          )}
+        </div>
+        <div className="ticket-sidebar-panel">
+          <div>
+            <div className="section-label" style={{marginBottom:8}}>Requester</div>
+            <div className="card card-p" style={{padding:'14px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                <div className="avatar" style={{width:30,height:30,fontSize:11}}>{initials(t.user.name)}</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:500}}>{t.user.name}</div>
+                  <div style={{fontSize:12,color:'var(--text-muted)'}}>{t.user.dept}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="section-label" style={{marginBottom:8}}>SLA</div>
+            <div className="card card-p" style={{padding:14}}>
+              <SLATimer deadline={t.sla} />
+              <div style={{fontSize:12,color:'var(--text-muted)',marginTop:4}}>Due {new Date(t.sla).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+            </div>
+          </div>
+          <div>
+            <div className="section-label" style={{marginBottom:8}}>Priority</div>
+            <select className="select" value={priority} onChange={e=>setPriority(e.target.value)}>
+              {['P1','P2','P3'].map(p=><option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <div className="section-label" style={{marginBottom:8}}>Status</div>
+            <select className="select" value={status} onChange={e=>setStatus(e.target.value)}>
+              {['open','in-progress','resolved'].map(s=><option key={s} value={s}>{s==='in-progress'?'In Progress':s==='open'?'Open':'Resolved'}</option>)}
+            </select>
+          </div>
+          <div>
+            <div className="section-label" style={{marginBottom:8}}>Category</div>
+            <div style={{fontSize:13}}><span className="tag">{t.category}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 7. KNOWLEDGE HUB (Agent)
+function KnowledgeHub() {
+  const [tab, setTab] = useState('published');
+  const [editing, setEditing] = useState(null);
+  const articles = [
+    { id:1, title:'How to resolve account lockouts via Entra ID', status:'published', updated:'2025-06-28', author:'Alex M.' },
+    { id:2, title:'SharePoint access request process', status:'published', updated:'2025-06-25', author:'Sam K.' },
+    { id:3, title:'Troubleshooting MFA code delivery failures', status:'draft', updated:'2025-07-01', author:'Alex M.' },
+  ];
+  const shown = articles.filter(a=>a.status===tab);
+
+  if(editing) return (
+    <div style={{maxWidth:700}}>
+      <button className="btn btn-ghost btn-sm" style={{marginBottom:16}} onClick={()=>setEditing(null)}>← Back to articles</button>
+      <div className="form-group">
+        <input className="input" defaultValue={editing.title} style={{fontWeight:600,fontSize:16}} />
+      </div>
+      <div className="md-editor">
+        <div className="md-toolbar">
+          {['B','I','H1','H2','Link','Code','List'].map(b=><button key={b} className="md-btn">{b}</button>)}
+        </div>
+        <textarea className="md-content textarea" style={{border:'none',borderRadius:0,minHeight:300}} defaultValue={`## Overview\n\nDescribe the issue and the fix here.\n\n## Steps\n\n1. First step\n2. Second step\n3. Third step\n\n## Notes\n\nAny additional notes for agents.`} />
+      </div>
+      <div style={{display:'flex',gap:8,marginTop:16}}>
+        <button className="btn btn-primary" onClick={()=>setEditing(null)}>Publish</button>
+        <button className="btn btn-secondary" onClick={()=>setEditing(null)}>Save draft</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="page-header flex justify-between items-center">
+        <div>
+          <div className="page-title">Knowledge hub</div>
+          <div className="page-sub">Articles authored from resolved tickets</div>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setEditing({id:99,title:'New article'})}>+ New article</button>
+      </div>
+      <div style={{display:'flex',gap:0,marginBottom:20}}>
+        {['published','draft'].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{padding:'7px 18px',background:tab===t?'var(--surface)':'var(--bg)',border:'1px solid var(--border)',borderRadius:tab==='published'?'var(--radius) 0 0 var(--radius)':'0 var(--radius) var(--radius) 0',fontWeight:tab===t?500:400,cursor:'pointer',color:tab===t?'var(--text)':'var(--text-muted)'}}>
+            {t==='published'?'Published':'Drafts'} ({articles.filter(a=>a.status===t).length})
+          </button>
+        ))}
+      </div>
+      <div className="card">
+        {shown.length===0
+          ? <EmptyState icon="📝" title="No articles yet" sub="Resolve a ticket and use 'Resolve & document' to create your first article." />
+          : shown.map((a,i)=>(
+            <div key={a.id} style={{padding:'14px 20px',borderBottom:i<shown.length-1?'1px solid var(--border)':'none',display:'flex',alignItems:'center',gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13.5,fontWeight:500,marginBottom:3}}>{a.title}</div>
+                <div style={{fontSize:12,color:'var(--text-muted)'}}>{a.author} · Updated {a.updated}</div>
+              </div>
+              <span className={`badge ${a.status==='published'?'badge-resolved':'badge-open'}`} style={{marginRight:8}}>{a.status==='published'?'Published':'Draft'}</span>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setEditing(a)}>Edit</button>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// 8. AGENT DASHBOARD
+function AgentDashboard({ setActivePage, setSelectedTicket }) {
+  const myTickets = TICKETS.filter(t=>t.assigned==='Alex M.'||!t.assigned).slice(0,5);
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">Dashboard</div>
+        <div className="page-sub">Your queue at a glance — Thursday, 1 July 2025</div>
+      </div>
+      <div className="grid-4" style={{marginBottom:20}}>
+        <StatCard label="My open tickets" value="4" trend="up" sub="1 more than yesterday" />
+        <StatCard label="Avg resolution" value="18m" trend="down" sub="3m faster this week" />
+        <StatCard label="SLA breach rate" value="8.3%" trend="flat" sub="Same as last week" />
+        <StatCard label="Resolved today" value="7" trend="up" sub="3 more than average" />
+      </div>
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">My queue</span>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setActivePage('agent-inbox')}>View all</button>
+        </div>
+        {myTickets.map((t,i)=>{
+          const slaS=getSLAStatus(t.sla);const barCls=slaS==='breach'?'sla-bar-red':slaS==='warn'?'sla-bar-amber':'sla-bar-green';
+          return (
+            <div key={t.id} className="inbox-row" onClick={()=>{setSelectedTicket(t.id);setActivePage('agent-ticket');}}>
+              <div className={`sla-bar ${barCls}`} />
+              <div className="inbox-info">
+                <div className="inbox-title">{t.title}</div>
+                <div className="inbox-sub">{t.category} · {t.user.name}</div>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+                <PriorityTag priority={t.priority} />
+                <SLATimer deadline={t.sla} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// 9. ADMIN SETTINGS
+function AdminSettings() {
+  const [color, setColor] = useState('#00897B');
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const [bizHours, setBizHours] = useState({Monday:true,Tuesday:true,Wednesday:true,Thursday:true,Friday:true,Saturday:false,Sunday:false});
+  return (
+    <div style={{maxWidth:600}}>
+      <div className="page-header"><div className="page-title">Organisation settings</div></div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-header"><span className="card-title">Branding</span></div>
+        <div className="card-p">
+          <div className="form-group">
+            <label className="label">Logo</label>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{width:48,height:48,background:'var(--slate)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:600,fontSize:16}}>T</div>
+              <button className="btn btn-secondary btn-sm">Upload logo</button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="label">Primary brand colour</label>
+            <div className="color-swatch-row">
+              <div className="color-swatch" style={{background:color}} />
+              <input type="color" value={color} onChange={e=>setColor(e.target.value)} style={{width:36,height:36,border:'1px solid var(--border)',borderRadius:'var(--radius)',cursor:'pointer',padding:2}} />
+              <input className="input" value={color} onChange={e=>setColor(e.target.value)} style={{width:120}} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="label">Custom domain</label>
+            <input className="input" defaultValue="support.acme.co.uk" />
+          </div>
+          <button className="btn btn-primary btn-sm">Save branding</button>
+        </div>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-header"><span className="card-title">Business hours</span></div>
+        <div className="card-p">
+          {days.map(d=>(
+            <div key={d} className="biz-row">
+              <span className="biz-day">{d}</span>
+              <Toggle on={!!bizHours[d]} onChange={v=>setBizHours({...bizHours,[d]:v})} />
+              {bizHours[d] && <>
+                <input type="time" defaultValue="09:00" style={{fontFamily:'var(--font)',fontSize:13,border:'1px solid var(--border)',borderRadius:6,padding:'4px 8px'}} />
+                <span style={{color:'var(--text-muted)',fontSize:13}}>to</span>
+                <input type="time" defaultValue="17:30" style={{fontFamily:'var(--font)',fontSize:13,border:'1px solid var(--border)',borderRadius:6,padding:'4px 8px'}} />
+              </>}
+              {!bizHours[d] && <span style={{fontSize:12,color:'var(--text-muted)'}}>Closed</span>}
+            </div>
+          ))}
+          <button className="btn btn-primary btn-sm" style={{marginTop:12}}>Save hours</button>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><span className="card-title">SLA thresholds</span></div>
+        <div className="card-p">
+          <table className="table" style={{marginBottom:12}}>
+            <thead><tr><th>Priority</th><th>First response</th><th>Resolution</th></tr></thead>
+            <tbody>
+              {[['P1','1 hour','4 hours'],['P2','4 hours','8 hours'],['P3','8 hours','24 hours']].map(([p,r,res])=>(
+                <tr key={p}><td><PriorityTag priority={p}/></td>
+                  <td><input className="input" defaultValue={r} style={{width:100}} /></td>
+                  <td><input className="input" defaultValue={res} style={{width:100}} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button className="btn btn-primary btn-sm">Save SLAs</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 10. USER MANAGEMENT
+function UserManagement() {
+  const [users, setUsers] = useState(USERS);
+  const [showInvite, setShowInvite] = useState(false);
+  const [invite, setInvite] = useState({email:'',role:'End User'});
+  const statusColor = { Active:'badge-resolved', Invited:'badge-open', Disabled:'badge-in-progress' };
+  return (
+    <div>
+      <div className="page-header flex justify-between items-center">
+        <div>
+          <div className="page-title">Users</div>
+          <div className="page-sub">{users.filter(u=>u.status==='Active').length} active · {users.filter(u=>u.status==='Invited').length} pending</div>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowInvite(!showInvite)}>+ Invite user</button>
+      </div>
+      {showInvite && (
+        <div className="card card-p" style={{maxWidth:400,marginBottom:16}}>
+          <div className="card-title" style={{marginBottom:14}}>Invite user</div>
+          <div className="form-group">
+            <label className="label">Email address</label>
+            <input className="input" value={invite.email} onChange={e=>setInvite({...invite,email:e.target.value})} placeholder="name@company.co.uk" />
+          </div>
+          <div className="form-group">
+            <label className="label">Role</label>
+            <select className="select" value={invite.role} onChange={e=>setInvite({...invite,role:e.target.value})}>
+              <option>End User</option><option>Agent</option><option>Admin</option>
+            </select>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-primary btn-sm" onClick={()=>{
+              if(!invite.email) return;
+              setUsers([...users,{name:invite.email.split('@')[0],email:invite.email,role:invite.role,dept:'—',lastActive:'—',status:'Invited'}]);
+              setInvite({email:'',role:'End User'});setShowInvite(false);
+            }}>Send invite</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setShowInvite(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+      <div className="card">
+        <table className="table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Last active</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {users.map((u,i)=>(
+              <tr key={i}>
+                <td>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <div className="avatar" style={{width:28,height:28,fontSize:10,background:u.role==='Agent'?'var(--teal)':u.role==='Admin'?'var(--slate)':'var(--purple)'}}>{initials(u.name)}</div>
+                    <span style={{fontWeight:500}}>{u.name}</span>
+                  </div>
+                </td>
+                <td style={{color:'var(--text-muted)'}}>{u.email}</td>
+                <td><span className="tag">{u.role}</span></td>
+                <td style={{color:'var(--text-muted)'}}>{u.dept}</td>
+                <td style={{color:'var(--text-muted)'}}>{u.lastActive}</td>
+                <td><span className={`badge ${statusColor[u.status]}`}>{u.status}</span></td>
+                <td>
+                  <div style={{display:'flex',gap:6}}>
+                    <button className="btn btn-ghost btn-sm">Edit</button>
+                    {u.status!=='Disabled'&&<button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>setUsers(us=>us.map((x,j)=>j===i?{...x,status:'Disabled'}:x))}>Disable</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// 11. INTEGRATIONS
+function Integrations() {
+  const [m365, setM365] = useState(true);
+  const [entra, setEntra] = useState(true);
+  const [webhook, setWebhook] = useState('');
+  const [events, setEvents] = useState({ticket_created:true,ticket_resolved:true,ticket_escalated:false,sla_breached:true});
+  const [pinged, setPinged] = useState(false);
+  return (
+    <div style={{maxWidth:660}}>
+      <div className="page-header"><div className="page-title">Integrations</div><div className="page-sub">Connect your tools to Ticktra</div></div>
+      <div className="flex-col gap-3" style={{marginBottom:20}}>
+        {[{name:'Microsoft 365',icon:'📧',desc:'Sync users, mailboxes, and send notifications via Outlook.',connected:m365,toggle:setM365,scope:'Mail, Calendar, Users'},
+          {name:'Entra ID',icon:'🔐',desc:'Automate password resets, account unlocks, and MFA via Microsoft Entra.',connected:entra,toggle:setEntra,scope:'User.ReadWrite.All, Directory.ReadWrite.All'}
+        ].map(i=>(
+          <div key={i.name} className="integration-tile">
+            <div className="integration-logo" style={{background:i.name==='Microsoft 365'?'#E3F2FD':'#EDE7F6'}}>{i.icon}</div>
+            <div className="integration-info">
+              <div className="integration-name">{i.name}</div>
+              <div className="integration-desc">{i.desc}</div>
+              {i.connected && <div style={{marginBottom:10}}><div className="connected-pill">● Connected</div>{i.scope&&<span style={{fontSize:11.5,color:'var(--text-muted)',marginLeft:6}}>Scopes: {i.scope}</span>}</div>}
+              {!i.connected && <div className="disconnected-pill" style={{marginBottom:10}}>◌ Not connected</div>}
+              <button className={`btn btn-sm ${i.connected?'btn-secondary btn-danger':'btn-primary'}`} onClick={()=>i.toggle(!i.connected)}>
+                {i.connected?'Disconnect':'Connect'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <div className="card-header"><span className="card-title">Webhook</span></div>
+        <div className="card-p">
+          <div className="form-group">
+            <label className="label">Endpoint URL</label>
+            <input className="input" value={webhook} onChange={e=>setWebhook(e.target.value)} placeholder="https://your-endpoint.example.com/webhook" />
+          </div>
+          <div className="section-label" style={{marginBottom:6}}>Send events</div>
+          {Object.entries(events).map(([k,v])=>(
+            <div key={k} className="event-check">
+              <input type="checkbox" className="checkbox" checked={v} onChange={()=>setEvents({...events,[k]:!v})} />
+              <span>{k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</span>
+            </div>
+          ))}
+          <div style={{display:'flex',gap:8,marginTop:14}}>
+            <button className="btn btn-primary btn-sm">Save webhook</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setPinged(true)}>
+              {pinged?'✓ Ping sent':'Test ping'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 12. ANALYTICS DASHBOARD
+function AnalyticsDashboard() {
+  const [range, setRange] = useState('30d');
+  const d = ANALYTICS;
+  const maxVol = Math.max(...d.ticketVolume);
+  const maxCat = Math.max(...d.categories.map(c=>c.count));
+
+  // Simple SVG line chart
+  const pts = d.ticketVolume.slice(0,30);
+  const w=500,h=100,pad=4;
+  const svgPts = pts.map((v,i)=>`${pad+i*((w-pad*2)/(pts.length-1))},${h-pad-(v/maxVol)*(h-pad*2)}`).join(' ');
+
+  return (
+    <div>
+      <div className="page-header flex justify-between items-center">
+        <div><div className="page-title">Analytics</div><div className="page-sub">Overview of your support operation</div></div>
+        <div className="date-tabs">
+          {['7d','30d','90d','Custom'].map(r=><button key={r} className={`date-tab ${range===r?'active':''}`} onClick={()=>setRange(r)}>{r}</button>)}
+        </div>
+      </div>
+      <div className="grid-4" style={{marginBottom:20}}>
+        <StatCard label="Ticket volume" value="155" trend="up" sub="12% vs prior period" />
+        <StatCard label="Resolution rate" value={`${d.resolutionRate}%`} trend="up" sub="2.1% improvement" />
+        <StatCard label="Avg handle time" value={d.avgHandleTime} trend="down" sub="4m faster" />
+        <StatCard label="SLA compliance" value={`${d.slaCompliance}%`} trend="flat" sub="Target: 95%" />
+      </div>
+      <div className="grid-2" style={{marginBottom:16}}>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Ticket volume</span><span style={{fontSize:12,color:'var(--text-muted)'}}>Last 30 days</span></div>
+          <div className="chart-area">
+            <svg viewBox={`0 0 ${w} ${h}`} style={{width:'100%',height:100}}>
+              <defs>
+                <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00897B" stopOpacity="0.15"/>
+                  <stop offset="100%" stopColor="#00897B" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              <polygon points={`${pad},${h} ${svgPts} ${pad+((pts.length-1)*((w-pad*2)/(pts.length-1)))},${h}`} fill="url(#lineGrad)" />
+              <polyline points={svgPts} fill="none" stroke="#00897B" strokeWidth="2" strokeLinejoin="round" />
+              {pts.map((v,i)=>(
+                i%5===0&&<circle key={i} cx={pad+i*((w-pad*2)/(pts.length-1))} cy={h-pad-(v/maxVol)*(h-pad*2)} r="3" fill="#00897B" />
+              ))}
+            </svg>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Top categories</span></div>
+          <div className="bar-chart">
+            {d.categories.map(c=>(
+              <div key={c.name} className="bar-row">
+                <span className="bar-label">{c.name}</span>
+                <div className="bar-track"><div className="bar-fill" style={{width:`${(c.count/maxCat)*100}%`}} /></div>
+                <span className="bar-val">{c.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><span className="card-title">AI vs agent resolution</span></div>
+        <div className="donut-wrap">
+          <svg viewBox="0 0 120 120" style={{width:120,height:120,flexShrink:0}}>
+            <circle cx="60" cy="60" r="42" fill="none" stroke="var(--bg)" strokeWidth="20"/>
+            <circle cx="60" cy="60" r="42" fill="none" stroke="var(--teal)" strokeWidth="20"
+              strokeDasharray={`${d.aiVsAgent.ai/100*264} 264`} strokeLinecap="round"
+              transform="rotate(-90 60 60)" />
+            <circle cx="60" cy="60" r="42" fill="none" stroke="var(--slate)" strokeWidth="20"
+              strokeDasharray={`${d.aiVsAgent.agent/100*264} 264`} strokeLinecap="round"
+              strokeDashoffset={`-${d.aiVsAgent.ai/100*264}`}
+              transform="rotate(-90 60 60)" />
+            <text x="60" y="58" textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--text)">{d.aiVsAgent.ai}%</text>
+            <text x="60" y="72" textAnchor="middle" fontSize="9" fill="var(--text-muted)">AI</text>
+          </svg>
+          <div className="donut-legend">
+            <div className="legend-item"><div className="legend-dot" style={{background:'var(--teal)'}}/><div><div style={{fontSize:13,fontWeight:500}}>AI resolved</div><div style={{fontSize:12,color:'var(--text-muted)'}}>{d.aiVsAgent.ai}% of tickets</div></div></div>
+            <div className="legend-item"><div className="legend-dot" style={{background:'var(--slate)'}}/><div><div style={{fontSize:13,fontWeight:500}}>Agent resolved</div><div style={{fontSize:12,color:'var(--text-muted)'}}>{d.aiVsAgent.agent}% of tickets</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── NAVIGATION CONFIG ────────────────────────────────────────────────────────
+const NAV = {
+  'End User': [
+    { id:'portal', label:'My tickets', icon:'🎫' },
+    { id:'kb', label:'Knowledge base', icon:'📚' },
+    { id:'account', label:'Account', icon:'👤' },
+  ],
+  Agent: [
+    { id:'agent-dashboard', label:'Dashboard', icon:'📊' },
+    { id:'agent-inbox', label:'Inbox', icon:'📥' },
+    { id:'agent-kb', label:'Knowledge hub', icon:'📝' },
+  ],
+  Admin: [
+    { id:'admin-analytics', label:'Analytics', icon:'📈' },
+    { id:'admin-users', label:'Users', icon:'👥' },
+    { id:'admin-integrations', label:'Integrations', icon:'🔌' },
+    { id:'admin-settings', label:'Settings', icon:'⚙️' },
+  ],
+};
+
+const PAGE_TITLES = {
+  portal:'My tickets', kb:'Knowledge base', account:'Account',
+  'agent-dashboard':'Dashboard','agent-inbox':'Inbox','agent-ticket':'Ticket','agent-kb':'Knowledge hub',
+  'admin-analytics':'Analytics','admin-users':'Users','admin-integrations':'Integrations','admin-settings':'Settings',
+};
+
+const ROLE_COLORS = { 'End User':'var(--teal)', Agent:'var(--amber)', Admin:'var(--slate)' };
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [role, setRole] = useState('End User');
+  const [activePage, setActivePage] = useState('portal');
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const menuRef = useRef(null);
+
+  // Reset page when role changes
+  const handleRoleChange = (r) => {
+    setRole(r);
+    setRoleMenuOpen(false);
+    const firstPage = NAV[r][0].id;
+    setActivePage(firstPage);
+  };
+
+  useEffect(()=>{
+    const handler = (e)=>{ if(menuRef.current&&!menuRef.current.contains(e.target)) setRoleMenuOpen(false); };
+    document.addEventListener('mousedown',handler);
+    return ()=>document.removeEventListener('mousedown',handler);
+  },[]);
+
+  const renderPage = () => {
+    switch(activePage) {
+      case 'portal': return <TicketPortal setActivePage={setActivePage} />;
+      case 'kb': return <KnowledgeBase />;
+      case 'account': return <AccountProfile />;
+      case 'agent-dashboard': return <AgentDashboard setActivePage={setActivePage} setSelectedTicket={setSelectedTicket} />;
+      case 'agent-inbox': return <AgentInbox setActivePage={setActivePage} setSelectedTicket={setSelectedTicket} />;
+      case 'agent-ticket': return <AgentTicketView ticketId={selectedTicket||TICKETS[0].id} setActivePage={setActivePage} />;
+      case 'agent-kb': return <KnowledgeHub />;
+      case 'admin-analytics': return <AnalyticsDashboard />;
+      case 'admin-users': return <UserManagement />;
+      case 'admin-integrations': return <Integrations />;
+      case 'admin-settings': return <AdminSettings />;
+      default: return <div className="empty-state"><div className="empty-icon">🚧</div><div className="empty-title">Coming soon</div></div>;
+    }
+  };
+
+  const isFullPage = activePage==='agent-ticket';
+
+  return (
+    <div className="app">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <div className="logo-mark">T</div>
+          <span className="logo-text">Ticktra</span>
+        </div>
+        <div className="sidebar-role-label">{role}</div>
+        <nav className="sidebar-nav">
+          {NAV[role].map(item=>(
+            <div key={item.id} className={`nav-item ${activePage===item.id||activePage===item.id.replace('inbox','ticket')?'active':''}`} onClick={()=>setActivePage(item.id)}>
+              <span className="icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main */}
+      <div className="main-wrap">
+        {/* Topbar */}
+        <header className="topbar">
+          <div className="topbar-title">{PAGE_TITLES[activePage]||''}</div>
+          {/* Role switcher */}
+          <div className="role-switcher" onClick={()=>setRoleMenuOpen(o=>!o)} ref={menuRef}>
+            <div className="role-dot" style={{background:ROLE_COLORS[role]}} />
+            {role}
+            <span style={{fontSize:10,opacity:0.5}}>▾</span>
+            {roleMenuOpen && (
+              <div className="role-menu">
+                <div style={{padding:'8px 14px 6px',fontSize:10.5,fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.6px'}}>Switch role</div>
+                {Object.keys(NAV).map(r=>(
+                  <div key={r} className={`role-menu-item ${role===r?'selected':''}`} onClick={(e)=>{e.stopPropagation();handleRoleChange(r);}}>
+                    <div className="role-dot" style={{background:ROLE_COLORS[r],width:8,height:8,borderRadius:'50%'}}/>
+                    {r}
+                    {role===r&&<span style={{marginLeft:'auto',fontSize:12}}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="avatar" title="Sarah Chen">SC</div>
+        </header>
+
+        {/* Page */}
+        {isFullPage
+          ? renderPage()
+          : <div className="page">{renderPage()}</div>
+        }
+      </div>
+
+      {/* Chat widget (always visible) */}
+      <ChatWidget />
+    </div>
+  );
+}
+
+
+// ── SCREEN 1: LANDING ─────────────────────────────────────────────────────────
+function Landing({goToAuth}) {
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',animation:'fadeIn 0.25s ease'}}>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      {/* NAV */}
+      <nav style={{position:'sticky',top:0,zIndex:100,background:'rgba(245,240,232,0.92)',backdropFilter:'blur(10px)',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',padding:'0 40px',height:60,gap:24}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
+          <div style={{width:30,height:30,background:'var(--teal)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:600,color:'white'}}>T</div>
+          <span style={{fontWeight:600,fontSize:16,letterSpacing:'-0.3px',color:'var(--slate)'}}>Ticktra</span>
+        </div>
+        <div style={{display:'flex',gap:28,fontSize:14,color:'var(--text-muted)'}}>
+          {['Product','Pricing','Docs','Blog'].map(l=><span key={l} style={{cursor:'pointer'}}>{l}</span>)}
+        </div>
+        <div style={{display:'flex',gap:10,marginLeft:'auto'}}>
+          <button onClick={()=>goToAuth('signin')} style={{padding:'8px 18px',fontSize:14,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius)',fontFamily:'var(--font)',cursor:'pointer',fontWeight:500}}>Sign in</button>
+          <button onClick={()=>goToAuth('signup')} style={{padding:'8px 18px',fontSize:14,background:'var(--teal)',color:'white',border:'none',borderRadius:'var(--radius)',fontFamily:'var(--font)',cursor:'pointer',fontWeight:500}}>Get started</button>
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <div style={{maxWidth:720,margin:'80px auto 0',padding:'0 24px',textAlign:'center'}}>
+        <div style={{display:'inline-flex',alignItems:'center',gap:7,background:'var(--teal-light)',border:'1px solid rgba(0,137,123,0.2)',color:'var(--teal-dark)',fontSize:12.5,fontWeight:500,padding:'5px 12px',borderRadius:99,marginBottom:28}}>✦ Now in early access</div>
+        <h1 style={{fontSize:54,fontWeight:600,letterSpacing:'-2.5px',lineHeight:1.08,color:'var(--slate)',marginBottom:22}}>Less L1 noise.<br/><span style={{color:'var(--teal)'}}>More time for real problems.</span></h1>
+        <p style={{fontSize:18,color:'var(--text-muted)',lineHeight:1.65,marginBottom:40,maxWidth:520,marginLeft:'auto',marginRight:'auto'}}>Ticktra resolves routine IT requests automatically — password resets, account unlocks, access requests — before they ever reach your team.</p>
+        <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:80}}>
+          <button onClick={()=>goToAuth('signup')} style={{background:'var(--teal)',color:'white',padding:'13px 28px',borderRadius:'var(--radius)',fontSize:15,fontWeight:500,cursor:'pointer',border:'none',fontFamily:'var(--font)'}}>Get started free</button>
+          <button onClick={()=>goToAuth('signup')} style={{background:'var(--surface)',border:'1px solid var(--border)',color:'var(--text)',padding:'13px 28px',borderRadius:'var(--radius)',fontSize:15,fontWeight:500,cursor:'pointer',fontFamily:'var(--font)'}}>See a demo →</button>
+        </div>
+      </div>
+
+      {/* TOP 3 FEATURE TILES */}
+      <div style={{background:'var(--surface)',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)',padding:'72px 40px'}}>
+        <div style={{maxWidth:960,margin:'0 auto'}}>
+          <div style={{fontSize:11.5,fontWeight:600,textTransform:'uppercase',letterSpacing:1,color:'var(--teal)',marginBottom:12,textAlign:'center'}}>What Ticktra does</div>
+          <h2 style={{fontSize:32,fontWeight:600,letterSpacing:'-0.8px',textAlign:'center',marginBottom:52}}>Automation where it matters most</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:24}}>
+            {[
+              {
+                icon:'🔐',
+                tag:'Layer 1',
+                title:'Identity resolution, instantly',
+                desc:'Password resets and account unlocks triggered directly via Azure AD or Okta — resolved in seconds, no agent needed.',
+              },
+              {
+                icon:'🔄',
+                tag:'Layer 1',
+                title:'Onboarding & offboarding on autopilot',
+                desc:'HR triggers kick off full onboarding and offboarding checklists automatically. New starters are ready on day one without an IT ticket.',
+              },
+              {
+                icon:'🧠',
+                tag:'Layer 2',
+                title:'AI-assisted diagnosis for engineers',
+                desc:'Describe the issue — Ticktra surfaces similar past tickets, resolutions, and runbooks so engineers spend less time searching and more time fixing.',
+              },
+            ].map((f,i)=>(
+              <div key={f.title} style={{padding:28,border:'1px solid',borderColor:i===0?'var(--teal)':'var(--border)',borderRadius:'var(--radius-lg)',background:i===0?'var(--teal-light)':'var(--bg)',position:'relative',overflow:'hidden'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
+                  <div style={{width:44,height:44,background:i===0?'white':'var(--surface)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,border:'1px solid var(--border)'}}>{f.icon}</div>
+                  <span style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:0.8,color:i===0?'var(--teal-dark)':'var(--text-muted)',background:i===0?'rgba(0,137,123,0.12)':'var(--surface)',padding:'3px 8px',borderRadius:99,border:'1px solid',borderColor:i===0?'rgba(0,137,123,0.2)':'var(--border)'}}>{f.tag}</span>
+                </div>
+                <div style={{fontSize:15,fontWeight:600,marginBottom:10,color:'var(--slate)'}}>{f.title}</div>
+                <div style={{fontSize:13.5,color:'var(--text-muted)',lineHeight:1.65}}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* TWO LAYER CARDS */}
+      <div style={{padding:'72px 40px',maxWidth:900,margin:'0 auto'}}>
+        <div style={{fontSize:11.5,fontWeight:600,textTransform:'uppercase',letterSpacing:1,color:'var(--teal)',marginBottom:12,textAlign:'center'}}>How it works</div>
+        <h2 style={{fontSize:32,fontWeight:600,letterSpacing:'-0.8px',textAlign:'center',marginBottom:48}}>Two layers. One platform.</h2>
+        <div style={{display:'flex',flexDirection:'column',gap:20}}>
+
+          {/* Layer 1 */}
+          <div style={{border:'2px solid var(--teal)',borderRadius:'var(--radius-lg)',overflow:'hidden'}}>
+            <div style={{background:'var(--teal)',padding:'20px 28px',display:'flex',alignItems:'center',gap:16}}>
+              <div style={{width:40,height:40,background:'rgba(255,255,255,0.15)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>⚡</div>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,color:'rgba(255,255,255,0.6)',marginBottom:2}}>Layer 01</div>
+                <div style={{fontSize:17,fontWeight:600,color:'white'}}>Automated Resolution — 1st Line</div>
+              </div>
+            </div>
+            <div style={{background:'var(--surface)',padding:'24px 28px'}}>
+              <ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:14}}>
+                {[
+                  'Password resets & account unlocks via identity provider integration (Azure AD, Okta)',
+                  'Software installation requests triggered through self-service portal',
+                  'Common error troubleshooting using decision-tree flows (VPN not connecting, printer issues)',
+                  'Status page checks — auto-respond if an outage is already known',
+                  'Onboarding/offboarding checklists run automatically based on HR triggers',
+                ].map(item=>(
+                  <li key={item} style={{display:'flex',alignItems:'flex-start',gap:12,fontSize:14,color:'var(--text)',lineHeight:1.5}}>
+                    <span style={{width:20,height:20,background:'var(--teal-light)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1,fontSize:11,color:'var(--teal)',fontWeight:700}}>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Layer 2 */}
+          <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',overflow:'hidden'}}>
+            <div style={{background:'var(--slate)',padding:'20px 28px',display:'flex',alignItems:'center',gap:16}}>
+              <div style={{width:40,height:40,background:'rgba(255,255,255,0.1)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🧠</div>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,color:'rgba(255,255,255,0.4)',marginBottom:2}}>Layer 02</div>
+                <div style={{fontSize:17,fontWeight:600,color:'white'}}>Engineer Support Hub — 2nd & 3rd Line</div>
+              </div>
+            </div>
+            <div style={{background:'var(--surface)',padding:'24px 28px'}}>
+              <ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:14}}>
+                {[
+                  'Company knowledge base — past tickets, resolutions, internal documentation, runbooks',
+                  'AI-assisted diagnosis — engineer describes the issue, system surfaces similar past tickets and suggested fixes',
+                ].map(item=>(
+                  <li key={item} style={{display:'flex',alignItems:'flex-start',gap:12,fontSize:14,color:'var(--text)',lineHeight:1.5}}>
+                    <span style={{width:20,height:20,background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1,fontSize:11,color:'var(--slate)',fontWeight:700}}>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* CTA BANNER */}
+      <div style={{background:'var(--slate)',margin:'0 40px 72px',borderRadius:'var(--radius-lg)',padding:'48px 40px',textAlign:'center',maxWidth:880,marginLeft:'auto',marginRight:'auto'}}>
+        <h2 style={{fontSize:28,fontWeight:600,color:'white',letterSpacing:'-0.5px',marginBottom:12}}>Ready to cut your L1 ticket volume?</h2>
+        <p style={{fontSize:15,color:'rgba(255,255,255,0.5)',marginBottom:28}}>Get set up in minutes. No credit card required.</p>
+        <button onClick={()=>goToAuth('signup')} style={{background:'var(--teal)',color:'white',padding:'13px 32px',borderRadius:'var(--radius)',fontSize:15,fontWeight:500,cursor:'pointer',border:'none',fontFamily:'var(--font)'}}>Start for free</button>
+      </div>
+
+      {/* FOOTER */}
+      <footer style={{background:'var(--slate)',padding:40,textAlign:'center'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginBottom:16}}>
+          <div style={{width:28,height:28,background:'var(--teal)',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:600,color:'white'}}>T</div>
+          <span style={{color:'white',fontWeight:600,fontSize:15}}>Ticktra</span>
+        </div>
+        <div style={{display:'flex',gap:24,justifyContent:'center',fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:16}}>
+          {['Product','Pricing','Privacy','Terms','Contact'].map(l=><span key={l} style={{cursor:'pointer'}}>{l}</span>)}
+        </div>
+        <div style={{fontSize:12.5,color:'rgba(255,255,255,0.25)'}}>© 2025 Ticktra Ltd. All rights reserved.</div>
+      </footer>
+    </div>
+  );
+}
+
+// ── SCREEN 2: AUTH ─────────────────────────────────────────────────────────────
+function Auth({defaultTab, goToApp, goToLanding}) {
+  const [tab, setTab] = React.useState(defaultTab || 'signup');
+  const [form, setForm] = React.useState({name:'',email:'',company:'',password:''});
+  const [errors, setErrors] = React.useState({});
+
+  const validate = () => {
+    const e = {};
+    if(tab==='signup' && !form.name) e.name = 'Required';
+    if(!form.email || !form.email.includes('@')) e.email = 'Valid email required';
+    if(!form.password || form.password.length < 6) e.password = 'Min 6 characters';
+    return e;
+  };
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const handleSubmit = () => {
+    const e = validate();
+    if(Object.keys(e).length > 0){ setErrors(e); return; }
+    setSubmitting(true);
+    const endpoint = tab === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+    api(endpoint, { method: 'POST', body: form })
+      .then(() => goToApp())
+      .catch(err => setErrors({ email: err.message }))
+      .finally(() => setSubmitting(false));
+  };
+
+  const fieldStyle = {width:'100%',padding:'9px 12px',border:'1px solid var(--border)',borderRadius:'var(--radius)',background:'var(--surface)',color:'var(--text)',fontSize:13.5,outline:'none',fontFamily:'var(--font)',boxSizing:'border-box'};
+  const labelStyle = {display:'block',fontSize:12.5,fontWeight:500,color:'var(--text-muted)',marginBottom:6};
+
+  return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'var(--bg)',animation:'fadeIn 0.25s ease'}}>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div style={{height:56,display:'flex',alignItems:'center',padding:'0 32px',borderBottom:'1px solid var(--border)',background:'var(--surface)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={goToLanding}>
+          <div style={{width:28,height:28,background:'var(--teal)',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:600,color:'white'}}>T</div>
+          <span style={{fontWeight:600,fontSize:15,color:'var(--slate)'}}>Ticktra</span>
+        </div>
+      </div>
+      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'40px 24px'}}>
+        <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:36,width:'100%',maxWidth:400,boxShadow:'0 4px 12px rgba(45,49,66,0.12)'}}>
+          <div style={{fontSize:20,fontWeight:600,letterSpacing:'-0.3px',marginBottom:4}}>{tab==='signup'?'Create your account':'Welcome back'}</div>
+          <div style={{fontSize:13,color:'var(--text-muted)',marginBottom:28}}>{tab==='signup'?'Start your free trial — no card required.':'Sign in to your Ticktra workspace.'}</div>
+
+          <div style={{display:'flex',marginBottom:24,borderBottom:'1px solid var(--border)'}}>
+            {['signup','signin'].map(t=>(
+              <div key={t} onClick={()=>{setTab(t);setErrors({});}} style={{padding:'8px 0',marginRight:24,fontSize:14,fontWeight:500,cursor:'pointer',color:tab===t?'var(--teal)':'var(--text-muted)',borderBottom:tab===t?'2px solid var(--teal)':'2px solid transparent',marginBottom:-1}}>
+                {t==='signup'?'Sign up':'Sign in'}
+              </div>
+            ))}
+          </div>
+
+          {tab==='signup' && (
+            <div style={{marginBottom:16}}>
+              <label style={labelStyle}>Full name</label>
+              <input style={fieldStyle} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Your name"/>
+              {errors.name&&<div style={{fontSize:12,color:'var(--red)',marginTop:4}}>{errors.name}</div>}
+            </div>
+          )}
+          <div style={{marginBottom:16}}>
+            <label style={labelStyle}>Work email</label>
+            <input style={fieldStyle} type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="name@company.co.uk"/>
+            {errors.email&&<div style={{fontSize:12,color:'var(--red)',marginTop:4}}>{errors.email}</div>}
+          </div>
+          {tab==='signup' && (
+            <div style={{marginBottom:16}}>
+              <label style={labelStyle}>Company name</label>
+              <input style={fieldStyle} value={form.company} onChange={e=>setForm({...form,company:e.target.value})} placeholder="Acme Corp"/>
+            </div>
+          )}
+          <div style={{marginBottom:tab==='signin'?4:16}}>
+            <label style={labelStyle}>Password</label>
+            <input style={fieldStyle} type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder={tab==='signup'?'Min 6 characters':'Your password'}/>
+            {errors.password&&<div style={{fontSize:12,color:'var(--red)',marginTop:4}}>{errors.password}</div>}
+          </div>
+          {tab==='signin'&&<div style={{textAlign:'right',marginBottom:16}}><span style={{fontSize:12.5,color:'var(--teal)',cursor:'pointer',fontWeight:500}}>Forgot password?</span></div>}
+
+          <button onClick={handleSubmit} disabled={submitting} style={{width:'100%',padding:'11px',background:'var(--teal)',color:'white',border:'none',borderRadius:'var(--radius)',fontSize:14,fontWeight:500,cursor:submitting?'default':'pointer',opacity:submitting?0.7:1,fontFamily:'var(--font)',marginBottom:4}}>
+            {submitting ? 'Please wait…' : (tab==='signup'?'Create account':'Sign in')}
+          </button>
+
+          <div style={{display:'flex',alignItems:'center',gap:12,margin:'16px 0'}}>
+            <div style={{flex:1,borderTop:'1px solid var(--border)'}}/>
+            <span style={{fontSize:12,color:'var(--text-muted)'}}>or</span>
+            <div style={{flex:1,borderTop:'1px solid var(--border)'}}/>
+          </div>
+
+          <button onClick={goToApp} style={{width:'100%',padding:'10px 16px',border:'1px solid var(--border)',borderRadius:'var(--radius)',background:'var(--surface)',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:'var(--font)'}}>
+            <svg width="20" height="20" viewBox="0 0 21 21"><rect x="0" y="0" width="10" height="10" fill="#F25022"/><rect x="11" y="0" width="10" height="10" fill="#7FBA00"/><rect x="0" y="11" width="10" height="10" fill="#00A4EF"/><rect x="11" y="11" width="10" height="10" fill="#FFB900"/></svg>
+            Continue with Microsoft (demo — not wired up)
+          </button>
+
+          <div style={{textAlign:'center',marginTop:20,fontSize:13,color:'var(--text-muted)'}}>
+            {tab==='signup'?<>Already have an account? <span onClick={()=>setTab('signin')} style={{color:'var(--teal)',cursor:'pointer',fontWeight:500}}>Sign in</span></>:<>Don't have an account? <span onClick={()=>setTab('signup')} style={{color:'var(--teal)',cursor:'pointer',fontWeight:500}}>Sign up free</span></>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+// ── ROOT ──────────────────────────────────────────────────────────────────────
+function Root() {
+  const [screen, setScreen] = useState('landing');
+  const [authTab, setAuthTab] = useState('signup');
+
+  const goToAuth = (tab='signup') => { setAuthTab(tab); setScreen('auth'); };
+  const goToApp = () => setScreen('app');
+  const goToLanding = () => setScreen('landing');
+
+  if(screen==='landing') return <Landing goToAuth={goToAuth}/>;
+  if(screen==='auth') return <Auth defaultTab={authTab} goToApp={goToApp} goToLanding={goToLanding}/>;
+  return <AppWithSignOut goToLanding={goToLanding}/>;
+}
+
+// Wraps the existing App component and adds sign-out
+function AppWithSignOut({goToLanding}) {
+  const [role, setRole] = useState('End User');
+  const [activePage, setActivePage] = useState('portal');
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const menuRef = useRef(null);
+
+  const handleRoleChange = (r) => { setRole(r); setRoleMenuOpen(false); setActivePage(NAV[r][0].id); };
+
+  useEffect(()=>{
+    const h = (e) => { if(menuRef.current&&!menuRef.current.contains(e.target)) setRoleMenuOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  },[]);
+
+  const renderPage = () => {
+    switch(activePage) {
+      case 'portal': return <TicketPortal setActivePage={setActivePage}/>;
+      case 'kb': return <KnowledgeBase/>;
+      case 'account': return <AccountProfile/>;
+      case 'agent-dashboard': return <AgentDashboard setActivePage={setActivePage} setSelectedTicket={setSelectedTicket}/>;
+      case 'agent-inbox': return <AgentInbox setActivePage={setActivePage} setSelectedTicket={setSelectedTicket}/>;
+      case 'agent-ticket': return <AgentTicketView ticketId={selectedTicket||TICKETS[0].id} setActivePage={setActivePage}/>;
+      case 'agent-kb': return <KnowledgeHub/>;
+      case 'admin-analytics': return <AnalyticsDashboard/>;
+      case 'admin-users': return <UserManagement/>;
+      case 'admin-integrations': return <Integrations/>;
+      case 'admin-settings': return <AdminSettings/>;
+      default: return <div className="empty-state"><div className="empty-icon">🚧</div><div className="empty-title">Coming soon</div></div>;
+    }
+  };
+
+  const isFullPage = activePage === 'agent-ticket';
+
+  return (
+    <div className="app" style={{animation:'fadeIn 0.25s ease'}}>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <div className="logo-mark">T</div>
+          <span className="logo-text">Ticktra</span>
+        </div>
+        <div className="sidebar-role-label">{role}</div>
+        <nav className="sidebar-nav">
+          {NAV[role].map(item=>(
+            <div key={item.id} className={`nav-item ${activePage===item.id?'active':''}`} onClick={()=>setActivePage(item.id)}>
+              <span className="icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </nav>
+        <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+          <button onClick={()=>api('/api/auth/logout',{method:'POST'}).finally(goToLanding)} style={{display:'flex',alignItems:'center',gap:8,color:'rgba(255,255,255,0.4)',fontSize:13,cursor:'pointer',background:'none',border:'none',width:'100%',padding:'6px 0',fontFamily:'var(--font)'}}>
+            <span>↩</span><span>Sign out</span>
+          </button>
+        </div>
+      </aside>
+      <div className="main-wrap">
+        <header className="topbar">
+          <div className="topbar-title">{PAGE_TITLES[activePage]||''}</div>
+          <div className="role-switcher" onClick={()=>setRoleMenuOpen(o=>!o)} ref={menuRef}>
+            <div className="role-dot" style={{background:ROLE_COLORS[role]}}/>
+            {role}
+            <span style={{fontSize:10,opacity:0.5}}>▾</span>
+            {roleMenuOpen&&(
+              <div className="role-menu">
+                <div style={{padding:'8px 14px 6px',fontSize:10.5,fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.6px'}}>Switch role</div>
+                {Object.keys(NAV).map(r=>(
+                  <div key={r} className={`role-menu-item ${role===r?'selected':''}`} onClick={(e)=>{e.stopPropagation();handleRoleChange(r);}}>
+                    <div className="role-dot" style={{background:ROLE_COLORS[r]}}/>
+                    {r}
+                    {role===r&&<span style={{marginLeft:'auto',fontSize:12}}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="avatar" title="Sarah Chen">SC</div>
+        </header>
+        {isFullPage ? renderPage() : <div className="page">{renderPage()}</div>}
+      </div>
+      <ChatWidget/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+
+</script>
+<script>
+  // Fetches the current data (tickets, KB articles, users, logged-in user)
+  // from the Flask backend, then transpiles and runs the app source above
+  // (kept as type="text/plain" so Babel doesn't auto-run it too early).
+  fetch('/api/bootstrap')
+    .then(r => r.json())
+    .then(data => {
+      window.__INITIAL__ = data;
+      const source = document.getElementById('ticktra-app-source').textContent;
+      const { code } = Babel.transform(source, { presets: ['react'] });
+      const script = document.createElement('script');
+      script.textContent = code;
+      document.body.appendChild(script);
+    })
+    .catch(err => {
+      document.getElementById('root').innerHTML =
+        '<div style="padding:40px;font-family:sans-serif;color:#C62828">Failed to load Ticktra: ' + err.message + '</div>';
+    });
+</script>
+</body>
+</html>
