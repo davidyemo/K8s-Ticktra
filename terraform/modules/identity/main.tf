@@ -10,7 +10,10 @@ data "azuread_user" "admin" {
 resource "azuread_group" "aks_admins" {
   display_name     = var.admin_group_name
   security_enabled = true
-  owners           = [data.azuread_client_config.current.object_id]
+   owners = [
+    data.azuread_client_config.current.object_id,
+    data.azuread_user.admin.object_id,
+  ]
 }
 
 # Add you to the admin group
@@ -23,5 +26,8 @@ resource "azuread_group_member" "admin" {
 resource "azuread_group" "aks_devs" {
   display_name     = var.dev_group_name
   security_enabled = true
-  owners           = [data.azuread_client_config.current.object_id]
+  owners           = [
+    data.azuread_client_config.current.object_id,
+    data.azuread_user.admin.object_id,
+  ]
 }
