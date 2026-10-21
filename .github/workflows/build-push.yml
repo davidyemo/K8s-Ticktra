@@ -3,9 +3,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "ticktra-flask/**"
+      - ".github/workflows/build-push.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  IMAGE_NAME: ticktra-flask
 
 jobs:
   build-and-push-docker-image:
@@ -14,26 +21,47 @@ jobs:
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build Docker Image
-        run: docker build -t ticktra-flask . 
-      
+        run: docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} ./ticktra-flask
+
       - name: Test Docker image
-        run: docker run -d ticktra-flask
+        run: |
+          docker run -d --name smoke-test -p 8000:8000 ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:8000/ > /dev/null; then
+              echo "App is responding"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "App did not respond on port 8000"
+          docker logs smoke-test
+          exit 1
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
 
       - name: Login to ACR
-        uses: azure/docker-Login@v2
+        uses: azure/docker-login@v2
         with:
-          login-server: ticktra.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ARM_CLIENT_ID }}
+          password: ${{ secrets.ARM_CLIENT_SECRET }}
 
       - name: Tag Docker Image
-        run: docker tag ticktra-flask ${{ secrets.ACR_LOGIN_SERVER }}/ticktra-flask:latest
+        run: |
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Push Docker Image to ACR
-        run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/ticktra-flask:latest
-
-
-    
+        run: |
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest

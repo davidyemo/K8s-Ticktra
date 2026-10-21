@@ -15,3 +15,7 @@ variable "container_registry_name" {
   type        = string
   default     = "ticktraregistry1"
 }
+variable "admin_user_upn" {
+  description = "Entra login of the AKS admin"
+  type        = string
+}

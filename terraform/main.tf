@@ -22,6 +22,7 @@ module "aks" {
   location = var.location
   resource_group_name = azurerm_resource_group.Resource_Group.name
   subnet_id = module.networking.subnet_id
+  admin_group_object_id = [module.identity.admin_group_object_id]
 }
 
    resource "azurerm_role_assignment" "aks_acr_pull" {
@@ -30,3 +31,8 @@ module "aks" {
      scope                            = module.acr.acr_id
      skip_service_principal_aad_check = true
    }
+
+  module "identity" {
+  source         = "./modules/identity"
+  admin_user_upn = var.admin_user_upn
+}

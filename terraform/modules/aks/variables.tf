@@ -13,3 +13,8 @@ variable "subnet_id" {
   description = "ID of the subnet for the AKS cluster"
   type        = string
 }
+
+variable "admin_group_object_id" {
+  description = "Object ID of the Azure AD group to be granted admin access to the AKS cluster"
+  type        = list(string)
+}

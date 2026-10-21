@@ -5,3 +5,7 @@ output "kubelet_identity_object_id" {
 output "cluster_name" {
   value = azurerm_kubernetes_cluster.aks.name
 }
+
+output "cluster_id" {
+  value = azurerm_kubernetes_cluster.aks.id
+}
