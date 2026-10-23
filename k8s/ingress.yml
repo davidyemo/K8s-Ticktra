@@ -2,16 +2,23 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ticktra-flask
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    acme.cert-manager.io/http01-edit-in-place: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - app.ticktra.io
+      secretName: ticktra-tls
   rules:
-  - host: app.ticktra.io
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: ticktra-flask
-            port:
-              number: 80
+    - host: app.ticktra.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ticktra-flask
+                port:
+                  number: 80
