@@ -29,6 +29,7 @@ class User(db.Model):
         return {
             "name": self.name,
             "email": self.email,
+            "company": self.company,
             "role": self.role,
             "dept": self.dept,
             "lastActive": "Just now",
