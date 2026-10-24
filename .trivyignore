@@ -1,0 +1,6 @@
+# Stale entries from the Python base image's bundled SBOM.
+# Installed versions are patched (setuptools 84.2.1, pip 26.2.2), scanned clean.
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
+CVE-2026-97687
+CVE-2026-97689
