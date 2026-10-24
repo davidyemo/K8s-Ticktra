@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   IMAGE_NAME: ticktra-flask
@@ -57,3 +57,12 @@ jobs:
         run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Update image tag in Git
+        run: |
+          sed -i "s|image: .*ticktra-flask:.*|image: ticktraregistry1.azurecr.io/ticktra-flask:${{ github.sha }}|" k8s/app/deployment.yml
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git commit -am "Deploy ticktra-flask ${{ github.sha }}"
+          git pull --rebase
+          git push
