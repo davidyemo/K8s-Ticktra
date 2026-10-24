@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - dev
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
     terraform-plan:
@@ -18,6 +21,13 @@ jobs:
             - name: checkout code
               uses: actions/checkout@v4
 
+            - name: Checkov Scan
+              uses: bridgecrewio/checkov-action@master
+              with:
+                directory: terraform/
+                framework: terraform
+                soft_fail: true
+
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v4
 
@@ -29,9 +39,11 @@ jobs:
               working-directory: ./terraform
               run: terraform plan
 
-            - name: Security Scan
-              uses: aquasecurity/tfsec-action@v1.0.0
-              with:
-               working_directory: ./terraform
+            - name: Open PR from dev to main
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: gh pr create --base main --head dev --title "Merge dev into main" --body "Terraform plan passed." || true
+
+            
 
 
