@@ -42,7 +42,7 @@ jobs:
             - name: Open PR from dev to main
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: gh pr create --base main --head dev --fill || echo "PR already open, or nothing new to merge"
+              run: gh pr create --base main --head dev --title "Merge dev into main" --body "Terraform plan passed." || true
 
             
 
