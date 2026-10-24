@@ -1,0 +1,21 @@
+alertmanager:
+  enabled: false
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+grafana:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      acme.cert-manager.io/http01-edit-in-place: "true"
+      nginx.org/redirect-to-https: "true"
+    hosts:
+      - grafana.ticktra.io
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.ticktra.io
