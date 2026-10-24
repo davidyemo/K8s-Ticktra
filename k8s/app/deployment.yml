@@ -5,7 +5,7 @@ metadata:
   labels:
     app: ticktra-flask
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: ticktra-flask
@@ -20,14 +20,3 @@ spec:
         ports:
         - containerPort: 8000
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ticktra-flask
-spec:
-  selector:
-    app: ticktra-flask
-  ports:
-    - port: 80
-      targetPort: 8000
