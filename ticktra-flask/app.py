@@ -12,6 +12,7 @@ import os
 from datetime import timedelta
 
 from flask import Flask, request, jsonify, session, send_from_directory
+from sqlalchemy import inspect, text
 
 from models import db, User, Ticket, TicketMessage, KBArticle
 
@@ -32,9 +33,27 @@ def current_user():
     return User.query.get(uid) if uid else None
 
 
+# Page ids each role can pick as their default home page (mirrors NAV in index.html).
+ROLE_PAGES = {
+    "End User": ["portal", "kb", "account"],
+    "Agent": ["agent-dashboard", "agent-inbox", "agent-kb"],
+    "Admin": ["admin-analytics", "admin-users", "admin-integrations", "admin-settings"],
+}
+
+
 def next_ticket_id():
     count = Ticket.query.count()
     return f"TKT-{count + 1:03d}"
+
+
+# ── schema upgrades ─────────────────────────────────────────────────────
+def upgrade_schema():
+    # db.create_all() won't add columns to existing tables, so add any new
+    # ones to an older ticktra.db by hand.
+    columns = {c["name"] for c in inspect(db.engine).get_columns("users")}
+    if "home_page" not in columns:
+        with db.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN home_page VARCHAR(40)"))
 
 
 # ── seed data (first run only) ──────────────────────────────────────────
@@ -159,6 +178,23 @@ def me():
     return jsonify({"user": user.to_dict() if user else None})
 
 
+@app.patch("/api/me")
+def update_me():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Not signed in."}), 401
+
+    data = request.get_json(force=True) or {}
+    if "home_page" in data:
+        home_page = data["home_page"]
+        if home_page not in ROLE_PAGES.get(user.role, []):
+            return jsonify({"error": "Invalid home page for your role."}), 400
+        user.home_page = home_page
+
+    db.session.commit()
+    return jsonify({"user": user.to_dict()})
+
+
 # ── tickets ─────────────────────────────────────────────────────────────
 @app.get("/api/tickets")
 def list_tickets():
@@ -233,6 +269,7 @@ def list_users():
 
 with app.app_context():
     db.create_all()
+    upgrade_schema()
     seed()
 
 if __name__ == "__main__":

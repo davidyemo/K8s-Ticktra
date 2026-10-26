@@ -1300,6 +1300,38 @@ function KnowledgeBase() {
   );
 }
 
+// Default home page picker, saved to the server via PATCH /api/me.
+// Options come from the signed-in user's real role, not the role switcher.
+function HomePageSetting() {
+  const options = CURRENT_USER ? (NAV[CURRENT_USER.role] || []) : [];
+  const [value, setValue] = useState((CURRENT_USER && CURRENT_USER.home_page) || (options[0] && options[0].id) || '');
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  if(!CURRENT_USER || options.length === 0) return null;
+
+  const onChange = (e) => {
+    const next = e.target.value;
+    const prev = value;
+    setValue(next); setSaved(false); setError('');
+    api('/api/me', { method: 'PATCH', body: { home_page: next } })
+      .then(() => { CURRENT_USER.home_page = next; setSaved(true); setTimeout(() => setSaved(false), 2000); })
+      .catch(err => { setValue(prev); setError(err.message); });
+  };
+
+  return (
+    <div className="form-group" style={{marginBottom:0}}>
+      <label className="label">Default home page</label>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>
+        <select className="select" value={value} onChange={onChange} style={{maxWidth:260}}>
+          {options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        {saved && <span className="connected-pill">Saved</span>}
+      </div>
+      {error && <div className="field-error">{error}</div>}
+    </div>
+  );
+}
+
 // 4. ACCOUNT/PROFILE
 function AccountProfile() {
   const [notifs, setNotifs] = useState({email:true,slack:false});
@@ -1328,6 +1360,12 @@ function AccountProfile() {
           ))}
         </div>
       </div>
+      {CURRENT_USER && (
+        <div className="card" style={{marginBottom:18}}>
+          <div className="card-header"><span className="card-title">Preferences</span></div>
+          <div className="card-p"><HomePageSetting/></div>
+        </div>
+      )}
       <div className="card" style={{marginBottom:18}}>
         <div className="card-header"><span className="card-title">Notifications</span></div>
         <div className="card-p" style={{paddingTop:6,paddingBottom:6}}>
@@ -1645,6 +1683,12 @@ function AdminSettings() {
   return (
     <div style={{maxWidth:680}}>
       <div className="page-header"><div className="page-title">Organisation settings</div><div className="page-sub">Branding, working hours and SLA targets</div></div>
+      {CURRENT_USER && (
+        <div className="card" style={{marginBottom:18}}>
+          <div className="card-header"><span className="card-title" style={{display:'flex',alignItems:'center',gap:8}}><Ic name="user" size={17}/>Your preferences</span></div>
+          <div className="card-p"><HomePageSetting/></div>
+        </div>
+      )}
       <div className="card" style={{marginBottom:18}}>
         <div className="card-header"><span className="card-title" style={{display:'flex',alignItems:'center',gap:8}}><Ic name="palette" size={17}/>Branding</span></div>
         <div className="card-p">
@@ -2187,9 +2231,9 @@ function Auth({defaultTab, goToApp, goToLanding}) {
     setSubmitting(true);
     const endpoint = tab === 'signup' ? '/api/auth/signup' : '/api/auth/login';
     api(endpoint, { method: 'POST', body: form })
-      .then(() => goToApp())
-      .catch(err => setErrors({ email: err.message }))
-      .finally(() => setSubmitting(false));
+      // Reload so /api/bootstrap runs again and CURRENT_USER is the new user.
+      .then(() => window.location.reload())
+      .catch(err => { setErrors({ email: err.message }); setSubmitting(false); });
   };
   const onEnter = (e) => { if(e.key==='Enter') handleSubmit(); };
 
@@ -2284,7 +2328,7 @@ function Auth({defaultTab, goToApp, goToLanding}) {
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
 function Root() {
-  const [screen, setScreen] = useState('landing');
+  const [screen, setScreen] = useState(CURRENT_USER ? 'app' : 'landing');
   const [authTab, setAuthTab] = useState('signup');
 
   const goToAuth = (tab='signup') => { setAuthTab(tab); setScreen('auth'); window.scrollTo(0,0); };
@@ -2299,8 +2343,10 @@ function Root() {
 // ── APP SHELL ─────────────────────────────────────────────────────────────────
 function AppWithSignOut({goToLanding}) {
   const defaultRole = (CURRENT_USER && CURRENT_USER.role) || 'End User';
+  const homePage = CURRENT_USER && CURRENT_USER.home_page;
+  const startPage = NAV[defaultRole].some(item => item.id === homePage) ? homePage : NAV[defaultRole][0].id;
   const [role, setRole] = useState(defaultRole);
-  const [activePage, setActivePage] = useState(NAV[defaultRole][0].id);
+  const [activePage, setActivePage] = useState(startPage);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const menuRef = useRef(null);
@@ -2331,7 +2377,8 @@ function AppWithSignOut({goToLanding}) {
   };
 
   const isFullPage = activePage === 'agent-ticket';
-  const signOut = () => api('/api/auth/logout',{method:'POST'}).finally(goToLanding);
+  // Reload after logout so the previous user's data (CURRENT_USER, tickets…) is dropped.
+  const signOut = () => api('/api/auth/logout',{method:'POST'}).finally(() => window.location.reload());
 
   return (
     <div className="app">
