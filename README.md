@@ -13,6 +13,12 @@ Users reach the app at app.ticktra.io over HTTPS through the NGINX Ingress Contr
 - ArgoCD watches the Git repo, rolls out new versions, and reverses any changes made outside of Git
 - Prometheus and Grafana track the health of the cluster and the app, with a dashboard built specifically for Ticktra
 
+## Demo
+
+![Ticktra demo](docs/demo.gif)
+
+*A user raises a ticket and an engineer resolves it, running live on AKS.*
+
 ## Architecture
 
 ![Ticktra platform architecture](docs/images/architecture.png)
