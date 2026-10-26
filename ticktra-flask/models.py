@@ -17,6 +17,7 @@ class User(db.Model):
     role = db.Column(db.String(20), default="End User")  # End User | Agent | Admin
     status = db.Column(db.String(20), default="Active")  # Active | Invited | Disabled
     password_hash = db.Column(db.String(255), nullable=False)
+    home_page = db.Column(db.String(40), nullable=True)  # page id from the role's NAV; None = role default
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password):
@@ -34,6 +35,7 @@ class User(db.Model):
             "dept": self.dept,
             "lastActive": "Just now",
             "status": self.status,
+            "home_page": self.home_page,
         }
 
 
