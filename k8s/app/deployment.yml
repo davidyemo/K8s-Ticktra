@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: ticktra-flask-container
-        image: ticktraregistry1.azurecr.io/ticktra-flask:cb79ef525fe572e9771b693cc12624f532a53818
+        image: ticktraregistry1.azurecr.io/ticktra-flask:0820e61b3d971598117e4ae4454d1cd51ae8e1c8
         ports:
         - containerPort: 8000
 
