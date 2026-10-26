@@ -247,8 +247,37 @@ def add_message(ticket_id):
 
 @app.post("/api/tickets/<ticket_id>/resolve")
 def resolve_ticket(ticket_id):
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Not signed in."}), 401
+
     ticket = Ticket.query.get_or_404(ticket_id)
+    # End users can only close their own tickets; agents/admins can close any.
+    if user.role == "End User" and ticket.user_id != user.id:
+        return jsonify({"error": "You can only close your own tickets."}), 403
+
     ticket.status = "resolved"
+    db.session.commit()
+    return jsonify({"ticket": ticket.to_dict()})
+
+
+@app.patch("/api/tickets/<ticket_id>")
+def update_ticket(ticket_id):
+    user = current_user()
+    if not user or user.role not in ("Agent", "Admin"):
+        return jsonify({"error": "Agent access required."}), 403
+
+    ticket = Ticket.query.get_or_404(ticket_id)
+    data = request.get_json(force=True) or {}
+    if "status" in data:
+        if data["status"] not in ("open", "in-progress", "resolved"):
+            return jsonify({"error": "Invalid status."}), 400
+        ticket.status = data["status"]
+    if "priority" in data:
+        if data["priority"] not in ("P1", "P2", "P3"):
+            return jsonify({"error": "Invalid priority."}), 400
+        ticket.priority = data["priority"]
+
     db.session.commit()
     return jsonify({"ticket": ticket.to_dict()})
 

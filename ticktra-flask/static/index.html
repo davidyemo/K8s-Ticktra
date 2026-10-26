@@ -40,6 +40,12 @@
     --brand-100: #DFE3FF;
     --accent: #7B61FF;
 
+    /* agent replies in ticket threads — distinct from the brand blue */
+    --agent: #0E9384;
+    --agent-700: #107569;
+    --agent-50: #F0FDF9;
+    --agent-100: #CCFBEF;
+
     /* legacy names kept so existing components inherit the brand */
     --teal: var(--brand);
     --teal-dark: var(--brand-700);
@@ -419,14 +425,14 @@
   .ticket-bar { padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; background: var(--surface); }
   .thread-msg { display: flex; gap: 12px; margin-bottom: 18px; animation: fadeIn .2s var(--ease); }
   .thread-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; flex-shrink: 0; margin-top: 2px; color: var(--text); background: var(--surface-3); border: 1px solid var(--border); }
-  .thread-msg.agent .thread-avatar { background: var(--brand); color: white; border-color: var(--brand); }
+  .thread-msg.agent .thread-avatar { background: var(--agent); color: white; border-color: var(--agent); }
   .thread-msg-body { flex: 1; min-width: 0; }
   .thread-msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
   .thread-msg-name { font-size: 13.5px; font-weight: 600; }
   .thread-msg-time { font-size: 12px; color: var(--text-light); font-family: var(--mono); }
   .thread-msg-text { background: var(--surface); border: 1px solid var(--border); border-radius: 4px 12px 12px 12px; padding: 12px 15px; font-size: 14px; line-height: 1.6; box-shadow: var(--shadow-xs); }
-  .thread-msg.agent .thread-msg-text { background: var(--brand-50); border-color: var(--brand-100); }
-  .agent-pill { font-size: 11px; background: var(--brand-50); color: var(--brand-700); padding: 0 7px; border-radius: 99px; font-weight: 600; border: 1px solid var(--brand-100); }
+  .thread-msg.agent .thread-msg-text { background: var(--agent-50); border-color: var(--agent-100); }
+  .agent-pill { font-size: 11px; background: var(--agent-50); color: var(--agent-700); padding: 0 7px; border-radius: 99px; font-weight: 600; border: 1px solid var(--agent-100); }
   .internal-note { background: #FFFCF5; border: 1px dashed #FEC84B; border-radius: 10px; padding: 12px 14px; font-size: 13.5px; color: #7A2E0E; }
   .note-label { font-size: 11px; font-weight: 600; color: var(--amber); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
   .composer { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; padding: 12px; box-shadow: var(--shadow-xs); }
@@ -793,6 +799,14 @@ async function api(path, options = {}) {
   return data;
 }
 
+// Write a ticket returned by the API back into the shared TICKETS list so
+// other pages (dashboard, inbox) see the change without a reload.
+function syncTicket(ticket) {
+  const i = TICKETS.findIndex(x=>x.id===ticket.id);
+  if (i >= 0) TICKETS[i] = ticket; else TICKETS.unshift(ticket);
+  return ticket;
+}
+
 const ANALYTICS = {
   ticketVolume: [12,18,14,22,27,19,15,24,31,28,22,19,25,30,26,18,14,21,29,33,25,18,16,23,31,28,22,19,24,29],
   resolutionRate: 94.2,
@@ -1024,14 +1038,15 @@ function TicketPortal({ setActivePage }) {
             <textarea className="textarea" value={update} onChange={e=>setUpdate(e.target.value)} placeholder="Add an update — describe what you're seeing..." rows={3} />
             <div style={{display:'flex',gap:8,marginTop:10,justifyContent:'flex-end',flexWrap:'wrap'}}>
               <button className="btn btn-secondary btn-sm" onClick={()=>{
+                if(!confirm('Close this ticket?')) return;
                 api(`/api/tickets/${t.id}/resolve`, { method:'POST' })
-                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?ticket:x)))
+                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?syncTicket(ticket):x)))
                   .catch(err=>alert(err.message));
               }}><Ic name="checkCircle" size={15}/>Close ticket</button>
               <button className="btn btn-primary btn-sm" onClick={()=>{
                 if(!update.trim()) return;
                 api(`/api/tickets/${t.id}/messages`, { method:'POST', body:{ text: update } })
-                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?ticket:x)))
+                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?syncTicket(ticket):x)))
                   .catch(err=>alert(err.message));
                 setUpdate('');
               }}><Ic name="send" size={14} stroke={2}/>Send update</button>
@@ -1489,17 +1504,27 @@ function AgentTicketView({ ticketId, setActivePage }) {
   const [priority, setPriority] = useState(t.priority);
   const [status, setStatus] = useState(t.status);
 
+  const applyTicket = ({ticket}) => {
+    syncTicket(ticket);
+    setTickets(ts=>ts.map(x=>x.id===ticket.id?ticket:x));
+    setStatus(ticket.status);
+    setPriority(ticket.priority);
+  };
+  const updateTicket = (fields) =>
+    api(`/api/tickets/${t.id}`, { method:'PATCH', body:fields }).then(applyTicket).catch(err=>alert(err.message));
+
   return (
     <div style={{height:'calc(100vh - var(--topbar-h))',display:'flex',flexDirection:'column',overflow:'hidden',animation:'fadeIn .3s var(--ease)'}}>
       <div className="ticket-bar">
         <button className="btn btn-ghost btn-sm" onClick={()=>setActivePage('agent-inbox')}><Ic name="arrowLeft" size={15}/>Inbox</button>
         <span style={{fontWeight:700,fontSize:15,flex:1,minWidth:0}} className="truncate">{t.title}</span>
         <span className="ticket-id">{t.id}</span>
-        <button className="btn btn-primary btn-sm" onClick={()=>{
-          setTickets(ts=>ts.map(x=>x.id===t.id?{...x,status:'resolved'}:x));
-          setStatus('resolved');
-          alert('Resolved and pushed to Knowledge Hub.');
-        }}><Ic name="checkCircle" size={15}/>Resolve & document</button>
+        {status === 'resolved'
+          ? <StatusBadge status="resolved" />
+          : <button className="btn btn-primary btn-sm" onClick={()=>{
+              if(!confirm('Close this ticket?')) return;
+              api(`/api/tickets/${t.id}/resolve`, { method:'POST' }).then(applyTicket).catch(err=>alert(err.message));
+            }}><Ic name="checkCircle" size={15}/>Close ticket</button>}
       </div>
       <div className="ticket-split" style={{flex:1}}>
         <div className="ticket-thread">
@@ -1514,7 +1539,7 @@ function AgentTicketView({ ticketId, setActivePage }) {
               }}><Ic name="edit" size={14}/>Internal note</button>
               <button className="btn btn-primary btn-sm" onClick={()=>{
                 if(!note.trim()) return;
-                setTickets(ts=>ts.map(x=>x.id===t.id?{...x,messages:[...x.messages,{from:'agent',name:'Alex M.',time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),text:note}]}:x));
+                api(`/api/tickets/${t.id}/messages`, { method:'POST', body:{ text: note } }).then(applyTicket).catch(err=>alert(err.message));
                 setNote('');
               }}><Ic name="send" size={14} stroke={2}/>Send reply</button>
             </div>
@@ -1546,13 +1571,13 @@ function AgentTicketView({ ticketId, setActivePage }) {
           </div>
           <div>
             <div className="section-label">Priority</div>
-            <select className="select" value={priority} onChange={e=>setPriority(e.target.value)}>
+            <select className="select" value={priority} onChange={e=>updateTicket({priority:e.target.value})}>
               {['P1','P2','P3'].map(p=><option key={p}>{p}</option>)}
             </select>
           </div>
           <div>
             <div className="section-label">Status</div>
-            <select className="select" value={status} onChange={e=>setStatus(e.target.value)}>
+            <select className="select" value={status} onChange={e=>updateTicket({status:e.target.value})}>
               {['open','in-progress','resolved'].map(s=><option key={s} value={s}>{s==='in-progress'?'In Progress':s==='open'?'Open':'Resolved'}</option>)}
             </select>
           </div>
