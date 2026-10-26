@@ -1,4 +1,4 @@
 *.tfstate
 *.tfstate.*
 .terraform/
-checkov-results.txt
+checkov-results.txt*.db
