@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#FFFFFF" />
-<meta name="description" content="Ticktra — IT support that resolves itself. Automated L1 resolution for modern IT teams." />
+<meta name="description" content="Ticktra. Raise it. Track it. Resolve it. An IT helpdesk where staff raise requests and engineers resolve them." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%234353FF' d='M8 0H24A8 8 0 0 1 32 8V12.5A3.5 3.5 0 0 0 32 19.5V24A8 8 0 0 1 24 32H8A8 8 0 0 1 0 24V19.5A3.5 3.5 0 0 0 0 12.5V8A8 8 0 0 1 8 0Z'/%3E%3Cpath d='M10 16.5l4.2 4.2L22 12.5' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-<title>Ticktra | Resolve it</title>
+<title>Ticktra — IT support that resolves itself</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -799,12 +799,35 @@ async function api(path, options = {}) {
   return data;
 }
 
-// Write a ticket returned by the API back into the shared TICKETS list so
-// other pages (dashboard, inbox) see the change without a reload.
-function syncTicket(ticket) {
-  const i = TICKETS.findIndex(x=>x.id===ticket.id);
-  if (i >= 0) TICKETS[i] = ticket; else TICKETS.unshift(ticket);
-  return ticket;
+// "Alex Martinez" -> "Alex M.", the format the backend stores in ticket.assigned.
+function shortName(name) {
+  const parts = name.split(' ');
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1][0]}.` : name;
+}
+
+// Small inline error line under an action, used instead of alert().
+function InlineError({ message }) {
+  return message ? <div className="field-error" role="alert">{message}</div> : null;
+}
+
+// Fetch fresh tickets when a page opens. Returns [loading, error].
+function useTicketsOnMount(loadTickets) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  useEffect(()=>{
+    loadTickets().then(()=>setError('')).catch(err=>setError(err.message)).finally(()=>setLoading(false));
+  }, []);
+  return [loading, error];
+}
+
+function RefreshButton({ loadTickets, onError }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button className="btn btn-secondary btn-sm" disabled={busy} onClick={()=>{
+      setBusy(true);
+      loadTickets().then(()=>onError('')).catch(err=>onError(err.message)).finally(()=>setBusy(false));
+    }}><Ic name="refresh" size={14}/>{busy ? 'Refreshing…' : 'Refresh'}</button>
+  );
 }
 
 const ANALYTICS = {
@@ -874,7 +897,7 @@ function Ic({ name, size = 18, stroke = 1.8, style }) {
 // ─── BRAND ────────────────────────────────────────────────────────────────────
 // Product name lives here only — change these to rebrand the whole UI.
 const BRAND = 'Ticktra';
-const BRAND_TAGLINE = 'IT support that resolves itself.';
+const BRAND_TAGLINE = 'Raise it. Track it. Resolve it.';
 
 // Mark: a ticket (notched sides) with a check through it — "ticket resolved".
 function BrandMark({ size = 28 }) {
@@ -1004,18 +1027,23 @@ function ThreadMessage({ m }) {
 // ─── PAGES ────────────────────────────────────────────────────────────────────
 
 // 1. TICKET PORTAL
-function TicketPortal({ setActivePage }) {
+function TicketPortal({ tickets, loadTickets, upsertTicket }) {
   const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({ title:'', desc:'', cat:'Password Reset' });
-  const [tickets, setTickets] = useState(TICKETS);
   const [update, setUpdate] = useState('');
+  const [, loadError] = useTicketsOnMount(loadTickets);
+  const [error, setError] = useState('');
+  const shownError = error || loadError;
 
-  if (selected) {
-    const t = tickets.find(x=>x.id===selected);
+  const t = selected && tickets.find(x=>x.id===selected);
+  if (t) {
     return (
       <div style={{maxWidth:760}}>
-        <button className="btn btn-ghost btn-sm" style={{marginBottom:18}} onClick={()=>setSelected(null)}><Ic name="arrowLeft" size={15}/>Back to tickets</button>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18,gap:8}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>{setSelected(null);setError('');}}><Ic name="arrowLeft" size={15}/>Back to tickets</button>
+          <RefreshButton loadTickets={loadTickets} onError={setError}/>
+        </div>
         <div className="card card-p" style={{marginBottom:20,display:'flex',alignItems:'flex-start',gap:16,flexWrap:'wrap'}}>
           <div className="ticket-card-icon" style={{width:48,height:48}}><Ic name={CATEGORY_ICON[t.category] || 'ticket'} size={22}/></div>
           <div style={{flex:1,minWidth:200}}>
@@ -1040,19 +1068,19 @@ function TicketPortal({ setActivePage }) {
               <button className="btn btn-secondary btn-sm" onClick={()=>{
                 if(!confirm('Close this ticket?')) return;
                 api(`/api/tickets/${t.id}/resolve`, { method:'POST' })
-                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?syncTicket(ticket):x)))
-                  .catch(err=>alert(err.message));
+                  .then(({ticket})=>{ upsertTicket(ticket); setError(''); })
+                  .catch(err=>setError(err.message));
               }}><Ic name="checkCircle" size={15}/>Close ticket</button>
               <button className="btn btn-primary btn-sm" onClick={()=>{
                 if(!update.trim()) return;
                 api(`/api/tickets/${t.id}/messages`, { method:'POST', body:{ text: update } })
-                  .then(({ticket})=> setTickets(ts=>ts.map(x=>x.id===t.id?syncTicket(ticket):x)))
-                  .catch(err=>alert(err.message));
-                setUpdate('');
+                  .then(({ticket})=>{ upsertTicket(ticket); setUpdate(''); setError(''); })
+                  .catch(err=>setError(err.message));
               }}><Ic name="send" size={14} stroke={2}/>Send update</button>
             </div>
           </div>
         )}
+        <InlineError message={shownError}/>
       </div>
     );
   }
@@ -1065,8 +1093,12 @@ function TicketPortal({ setActivePage }) {
           <div className="page-title">My tickets</div>
           <div className="page-sub">{openCount} open · {tickets.length - openCount} resolved — track and manage your IT requests</div>
         </div>
-        <button className="btn btn-primary" onClick={()=>setShowNew(!showNew)}><Ic name="plus" size={16} stroke={2.2}/>New ticket</button>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <RefreshButton loadTickets={loadTickets} onError={setError}/>
+          <button className="btn btn-primary" onClick={()=>setShowNew(!showNew)}><Ic name="plus" size={16} stroke={2.2}/>New ticket</button>
+        </div>
       </div>
+      {shownError && <div style={{marginBottom:16}}><InlineError message={shownError}/></div>}
 
       {showNew && (
         <div className="card" style={{maxWidth:600,marginBottom:24,animation:'pop .3s var(--ease)'}}>
@@ -1091,11 +1123,12 @@ function TicketPortal({ setActivePage }) {
                 if(!form.title) return;
                 api('/api/tickets', { method:'POST', body: form })
                   .then(({ticket})=>{
-                    setTickets(ts=>[ticket, ...ts]);
+                    upsertTicket(ticket);
                     setForm({title:'',desc:'',cat:'Password Reset'});
                     setShowNew(false);
+                    setError('');
                   })
-                  .catch(err=>alert(err.message));
+                  .catch(err=>setError(err.message));
               }}>Submit request</button>
               <button className="btn btn-secondary" onClick={()=>setShowNew(false)}>Cancel</button>
             </div>
@@ -1126,18 +1159,16 @@ function ChatWidget() {
 
   const flows = {
     'Reset my password': [
-      {from:'bot',text:"Sure — I can handle this right away. Which account needs the reset?"},
-      {from:'bot',text:"Got it. I've sent a password reset link to the email on file. Check your inbox."},
+      {from:'bot',text:"I can't reset passwords myself. Raise a Password Reset ticket from My tickets and an agent will pick it up."},
     ],
     'Unlock my account': [
-      {from:'bot',text:"I can see your account has been locked. I'll unlock it now — this takes about 30 seconds."},
-      {from:'bot',text:"Done. Your account is unlocked. Try logging in again."},
+      {from:'bot',text:"I can't unlock accounts myself. Raise an Account Lockout ticket from My tickets and an agent will unlock it for you."},
     ],
     'Request access': [
-      {from:'bot',text:"Which resource do you need access to? (e.g. SharePoint site, shared inbox, Teams channel)"},
+      {from:'bot',text:"Raise an Access Request ticket from My tickets. Say which site, inbox or channel you need and an agent will sort it."},
     ],
     'Something else': [
-      {from:'bot',text:"No problem — I'll raise a ticket for an agent. Can you briefly describe the issue?"},
+      {from:'bot',text:"Raise a ticket from My tickets and describe the issue. An agent will reply there."},
     ]
   };
 
@@ -1148,8 +1179,7 @@ function ChatWidget() {
     const flow = flows[choice];
     if(flow) {
       flow.forEach((m,i)=>setTimeout(()=>setMsgs(prev=>[...prev,m]),400*(i+1)));
-      if(choice==='Reset my password'||choice==='Unlock my account') setTimeout(()=>setOutcome('auto'),900);
-      if(choice==='Something else') setTimeout(()=>setOutcome('escalated'),900);
+      setTimeout(()=>setOutcome('ticket'),900);
     }
     setMsgs(newMsgs);
     setStep(s=>s+1);
@@ -1167,7 +1197,7 @@ function ChatWidget() {
             <div className="chat-avatar"><Ic name="bot" size={20}/></div>
             <div className="chat-header-info">
               <div className="chat-header-name">{BRAND} Assistant</div>
-              <div className="chat-header-status">Online · replies instantly</div>
+              <div className="chat-header-status">Help with raising tickets</div>
             </div>
             <button className="icon-btn" onClick={()=>setOpen(false)}><Ic name="x" size={16}/></button>
           </div>
@@ -1177,8 +1207,7 @@ function ChatWidget() {
                 <div className="chat-bubble">{m.text}</div>
               </div>
             ))}
-            {outcome==='auto' && <div className="chat-outcome auto"><Ic name="checkCircle" size={15}/>Handled automatically</div>}
-            {outcome==='escalated' && <div className="chat-outcome escalated"><Ic name="refresh" size={15}/>Escalated to agent</div>}
+            {outcome==='ticket' && <div className="chat-outcome escalated"><Ic name="ticket" size={15}/>Raise a ticket so an agent can help</div>}
             <div ref={endRef}/>
           </div>
           {quickReplies.length > 0 && (
@@ -1348,7 +1377,7 @@ function HomePageSetting() {
 }
 
 // 4. ACCOUNT/PROFILE
-function AccountProfile() {
+function AccountProfile({ tickets }) {
   const [notifs, setNotifs] = useState({email:true,slack:false});
   const user = CURRENT_USER || { name: 'You', email: '', role: 'End User', dept: '—' };
   return (
@@ -1402,8 +1431,8 @@ function AccountProfile() {
       </div>
       <div className="card">
         <div className="card-header"><span className="card-title">Recent tickets</span></div>
-        {TICKETS.length === 0 && <EmptyState icon="ticket" title="No tickets yet" sub="Requests you raise will show up here." />}
-        {TICKETS.slice(0,5).map((t,i,arr)=>(
+        {tickets.length === 0 && <EmptyState icon="ticket" title="No tickets yet" sub="Requests you raise will show up here." />}
+        {tickets.slice(0,5).map((t,i,arr)=>(
           <div key={t.id} style={{padding:'14px 22px',borderBottom:i<arr.length-1?'1px solid var(--border)':'none',display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
             <div style={{minWidth:0}}>
               <div style={{fontSize:13.5,fontWeight:600,marginBottom:5}} className="truncate">{t.title}</div>
@@ -1418,11 +1447,13 @@ function AccountProfile() {
 }
 
 // 5. AGENT TICKET INBOX
-function AgentInbox({ setActivePage, setSelectedTicket }) {
+function AgentInbox({ tickets, loadTickets, upsertTicket, setActivePage, setSelectedTicket }) {
   const [filter, setFilter] = useState({ priority:'all', cat:'all', assigned:'all' });
   const [selected, setSelected] = useState([]);
+  const [, loadError] = useTicketsOnMount(loadTickets);
+  const [error, setError] = useState('');
 
-  const open = TICKETS.filter(t=>t.status!=='resolved');
+  const open = tickets.filter(t=>t.status!=='resolved');
   const filtered = open.filter(t=>{
     if(filter.priority!=='all'&&t.priority!==filter.priority) return false;
     if(filter.cat!=='all'&&t.category!==filter.cat) return false;
@@ -1438,6 +1469,18 @@ function AgentInbox({ setActivePage, setSelectedTicket }) {
 
   const toggleSelect = (id) => setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
 
+  // Apply the same request to every selected ticket.
+  const bulk = (confirmText, request) => {
+    if(confirmText && !confirm(confirmText)) return;
+    Promise.all(selected.map(id=>request(id).then(({ticket})=>upsertTicket(ticket))))
+      .then(()=>setError(''))
+      .catch(err=>setError(err.message))
+      .finally(()=>setSelected([]));
+  };
+  const assignSelected = () => bulk(null, id=>api(`/api/tickets/${id}`, { method:'PATCH', body:{ assign_to_me:true } }));
+  const closeSelected = () => bulk(`Close ${selected.length} ticket${selected.length>1?'s':''}?`,
+    id=>api(`/api/tickets/${id}/resolve`, { method:'POST' }));
+
   return (
     <div>
       <div className="page-header flex justify-between items-center" style={{flexWrap:'wrap'}}>
@@ -1445,13 +1488,17 @@ function AgentInbox({ setActivePage, setSelectedTicket }) {
           <div className="page-title">Inbox</div>
           <div className="page-sub">{open.length} open tickets · <span style={{color:'var(--red)'}}>{open.filter(t=>getSLAStatus(t.sla)==='breach').length} SLA breached</span></div>
         </div>
-        {selected.length>0 && (
-          <div style={{display:'flex',gap:8,animation:'pop .2s var(--ease)'}}>
-            <button className="btn btn-secondary btn-sm">Assign to me ({selected.length})</button>
-            <button className="btn btn-secondary btn-sm">Close selected</button>
-          </div>
-        )}
+        <div style={{display:'flex',gap:8}}>
+          {selected.length>0 && (
+            <div style={{display:'flex',gap:8,animation:'pop .2s var(--ease)'}}>
+              <button className="btn btn-secondary btn-sm" onClick={assignSelected}>Assign to me ({selected.length})</button>
+              <button className="btn btn-secondary btn-sm" onClick={closeSelected}>Close selected</button>
+            </div>
+          )}
+          <RefreshButton loadTickets={loadTickets} onError={setError}/>
+        </div>
       </div>
+      {(error || loadError) && <div style={{marginBottom:16}}><InlineError message={error || loadError}/></div>}
       <div className="filter-bar">
         <select className="select" value={filter.priority} onChange={e=>setFilter({...filter,priority:e.target.value})}>
           <option value="all">All priorities</option>
@@ -1486,7 +1533,7 @@ function AgentInbox({ setActivePage, setSelectedTicket }) {
                   <div style={{display:'flex',gap:6}}><PriorityTag priority={t.priority}/><StatusBadge status={t.status}/></div>
                   <SLATimer deadline={t.sla} />
                 </div>
-                {!t.assigned && <span className="pill-muted">Unassigned</span>}
+                <span className="pill-muted">{t.assigned || 'Unassigned'}</span>
               </div>
             );
           })}
@@ -1496,22 +1543,30 @@ function AgentInbox({ setActivePage, setSelectedTicket }) {
 }
 
 // 6. AGENT TICKET VIEW
-function AgentTicketView({ ticketId, setActivePage }) {
-  const [tickets, setTickets] = useState(TICKETS);
+function AgentTicketView({ tickets, loadTickets, upsertTicket, ticketId, setActivePage }) {
   const [note, setNote] = useState('');
   const [noteText, setNoteText] = useState('');
-  const t = tickets.find(x=>x.id===ticketId) || tickets[0];
-  const [priority, setPriority] = useState(t.priority);
-  const [status, setStatus] = useState(t.status);
+  const [error, setError] = useState('');
+  const [loading, loadError] = useTicketsOnMount(loadTickets);
+  const t = tickets.find(x=>x.id===ticketId);
 
-  const applyTicket = ({ticket}) => {
-    syncTicket(ticket);
-    setTickets(ts=>ts.map(x=>x.id===ticket.id?ticket:x));
-    setStatus(ticket.status);
-    setPriority(ticket.priority);
-  };
-  const updateTicket = (fields) =>
-    api(`/api/tickets/${t.id}`, { method:'PATCH', body:fields }).then(applyTicket).catch(err=>alert(err.message));
+  if (!t) {
+    return (
+      <div className="page"><div className="page-inner">
+        <button className="btn btn-ghost btn-sm" onClick={()=>setActivePage('agent-inbox')}><Ic name="arrowLeft" size={15}/>Inbox</button>
+        {loading
+          ? <EmptyState icon="ticket" title="Loading ticket…" sub="Fetching the latest version." />
+          : <EmptyState icon="ticket" title="Ticket not found" sub={loadError || 'Go back to the inbox and pick a ticket.'} />}
+      </div></div>
+    );
+  }
+
+  const run = (request) => request
+    .then(({ticket})=>{ upsertTicket(ticket); setError(''); })
+    .catch(err=>{ setError(err.message); throw err; });
+  const resolve = () => run(api(`/api/tickets/${t.id}/resolve`, { method:'POST' })).catch(()=>{});
+  const updateTicket = (fields) => run(api(`/api/tickets/${t.id}`, { method:'PATCH', body:fields })).catch(()=>{});
+  const changeStatus = (s) => s === 'resolved' ? resolve() : updateTicket({ status:s });
 
   return (
     <div style={{height:'calc(100vh - var(--topbar-h))',display:'flex',flexDirection:'column',overflow:'hidden',animation:'fadeIn .3s var(--ease)'}}>
@@ -1519,13 +1574,11 @@ function AgentTicketView({ ticketId, setActivePage }) {
         <button className="btn btn-ghost btn-sm" onClick={()=>setActivePage('agent-inbox')}><Ic name="arrowLeft" size={15}/>Inbox</button>
         <span style={{fontWeight:700,fontSize:15,flex:1,minWidth:0}} className="truncate">{t.title}</span>
         <span className="ticket-id">{t.id}</span>
-        {status === 'resolved'
+        {t.status === 'resolved'
           ? <StatusBadge status="resolved" />
-          : <button className="btn btn-primary btn-sm" onClick={()=>{
-              if(!confirm('Close this ticket?')) return;
-              api(`/api/tickets/${t.id}/resolve`, { method:'POST' }).then(applyTicket).catch(err=>alert(err.message));
-            }}><Ic name="checkCircle" size={15}/>Close ticket</button>}
+          : <button className="btn btn-primary btn-sm" onClick={resolve}><Ic name="checkCircle" size={15}/>Resolve ticket</button>}
       </div>
+      {(error || loadError) && <div style={{padding:'0 24px'}}><InlineError message={error || loadError}/></div>}
       <div className="ticket-split" style={{flex:1}}>
         <div className="ticket-thread">
           <div className="section-label" style={{marginBottom:18}}>Thread</div>
@@ -1539,8 +1592,8 @@ function AgentTicketView({ ticketId, setActivePage }) {
               }}><Ic name="edit" size={14}/>Internal note</button>
               <button className="btn btn-primary btn-sm" onClick={()=>{
                 if(!note.trim()) return;
-                api(`/api/tickets/${t.id}/messages`, { method:'POST', body:{ text: note } }).then(applyTicket).catch(err=>alert(err.message));
-                setNote('');
+                run(api(`/api/tickets/${t.id}/messages`, { method:'POST', body:{ text: note } }))
+                  .then(()=>setNote('')).catch(()=>{});
               }}><Ic name="send" size={14} stroke={2}/>Send reply</button>
             </div>
           </div>
@@ -1571,13 +1624,13 @@ function AgentTicketView({ ticketId, setActivePage }) {
           </div>
           <div>
             <div className="section-label">Priority</div>
-            <select className="select" value={priority} onChange={e=>updateTicket({priority:e.target.value})}>
+            <select className="select" value={t.priority} onChange={e=>updateTicket({priority:e.target.value})}>
               {['P1','P2','P3'].map(p=><option key={p}>{p}</option>)}
             </select>
           </div>
           <div>
             <div className="section-label">Status</div>
-            <select className="select" value={status} onChange={e=>updateTicket({status:e.target.value})}>
+            <select className="select" value={t.status} onChange={e=>changeStatus(e.target.value)}>
               {['open','in-progress','resolved'].map(s=><option key={s} value={s}>{s==='in-progress'?'In Progress':s==='open'?'Open':'Resolved'}</option>)}
             </select>
           </div>
@@ -1658,8 +1711,10 @@ function KnowledgeHub() {
 }
 
 // 8. AGENT DASHBOARD
-function AgentDashboard({ setActivePage, setSelectedTicket }) {
-  const myTickets = TICKETS.filter(t=>t.assigned==='Alex M.'||!t.assigned).slice(0,5);
+function AgentDashboard({ tickets, loadTickets, setActivePage, setSelectedTicket }) {
+  const [, loadError] = useTicketsOnMount(loadTickets);
+  const me = CURRENT_USER ? shortName(CURRENT_USER.name) : '';
+  const myTickets = tickets.filter(t=>t.status!=='resolved'&&(t.assigned===me||!t.assigned)).slice(0,5);
   const today = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   return (
     <div>
@@ -1668,7 +1723,7 @@ function AgentDashboard({ setActivePage, setSelectedTicket }) {
         <div className="page-sub">Your queue at a glance — {today}</div>
       </div>
       <div className="grid-4" style={{marginBottom:22}}>
-        <StatCard label="My open tickets" value="4" trend="up" sub="1 more than yesterday" icon="inbox" tone="teal" />
+        <StatCard label="My open tickets" value={String(tickets.filter(t=>t.status!=='resolved'&&t.assigned===me).length)} icon="inbox" tone="teal" />
         <StatCard label="Avg resolution" value="18m" trend="down" sub="3m faster this week" icon="clock" tone="indigo" />
         <StatCard label="SLA breach rate" value="8.3%" trend="flat" sub="Same as last week" icon="gauge" tone="amber" />
         <StatCard label="Resolved today" value="7" trend="up" sub="3 more than average" icon="checkCircle" tone="violet" />
@@ -1678,6 +1733,7 @@ function AgentDashboard({ setActivePage, setSelectedTicket }) {
           <span className="card-title">My queue</span>
           <button className="btn btn-ghost btn-sm" onClick={()=>setActivePage('agent-inbox')}>View all<Ic name="arrow" size={14}/></button>
         </div>
+        {loadError && <div style={{padding:'12px 22px 0'}}><InlineError message={loadError}/></div>}
         {myTickets.length === 0 && <EmptyState icon="checkCircle" title="Nothing waiting" sub="Your queue is empty." />}
         {myTickets.map((t,i)=>{
           const slaS=getSLAStatus(t.sla);const barCls=slaS==='breach'?'sla-bar-red':slaS==='warn'?'sla-bar-amber':'sla-bar-green';
@@ -1867,7 +1923,7 @@ function Integrations() {
       <div className="page-header"><div className="page-title">Integrations</div><div className="page-sub">Connect your tools to {BRAND}</div></div>
       <div className="flex-col gap-3" style={{marginBottom:22}}>
         {[{name:'Microsoft 365',icon:'mail',tone:'indigo',desc:'Sync users, mailboxes, and send notifications via Outlook.',connected:m365,toggle:setM365,scope:'Mail, Calendar, Users'},
-          {name:'Entra ID',icon:'shield',tone:'violet',desc:'Automate password resets, account unlocks, and MFA via Microsoft Entra.',connected:entra,toggle:setEntra,scope:'User.ReadWrite.All, Directory.ReadWrite.All'}
+          {name:'Entra ID',icon:'shield',tone:'violet',desc:'Connect Microsoft Entra ID so agents can look up user accounts.',connected:entra,toggle:setEntra,scope:'User.ReadWrite.All, Directory.ReadWrite.All'}
         ].map(i=>(
           <div key={i.name} className={`integration-tile tone-${i.tone}`}>
             <div className="integration-logo"><Ic name={i.icon} size={24}/></div>
@@ -1981,7 +2037,7 @@ function AnalyticsDashboard() {
         </div>
       </div>
       <div className="card">
-        <div className="card-header"><span className="card-title">AI vs agent resolution</span></div>
+        <div className="card-header"><span className="card-title">Who closed tickets</span></div>
         <div className="donut-wrap">
           <svg viewBox="0 0 120 120" style={{width:150,height:150,flexShrink:0}}>
             <defs>
@@ -2001,8 +2057,8 @@ function AnalyticsDashboard() {
             <text x="60" y="75" textAnchor="middle" fontSize="8.5" fill="#566072" letterSpacing="1">AUTO</text>
           </svg>
           <div className="donut-legend">
-            <div className="legend-item"><div className="legend-dot" style={{background:'var(--brand)'}}/><div><div style={{fontSize:13.5,fontWeight:600}}>AI resolved</div><div style={{fontSize:12,color:'var(--text-muted)'}}>{d.aiVsAgent.ai}% of tickets</div></div></div>
-            <div className="legend-item"><div className="legend-dot" style={{background:'#D0D5DD'}}/><div><div style={{fontSize:13.5,fontWeight:600}}>Agent resolved</div><div style={{fontSize:12,color:'var(--text-muted)'}}>{d.aiVsAgent.agent}% of tickets</div></div></div>
+            <div className="legend-item"><div className="legend-dot" style={{background:'var(--brand)'}}/><div><div style={{fontSize:13.5,fontWeight:600}}>Resolved by agent</div><div style={{fontSize:12,color:'var(--text-muted)'}}>{d.aiVsAgent.ai}% of tickets</div></div></div>
+            <div className="legend-item"><div className="legend-dot" style={{background:'#D0D5DD'}}/><div><div style={{fontSize:13.5,fontWeight:600}}>Closed by requester</div><div style={{fontSize:12,color:'var(--text-muted)'}}>{d.aiVsAgent.agent}% of tickets</div></div></div>
           </div>
         </div>
       </div>
@@ -2236,7 +2292,7 @@ function Landing({goToAuth}) {
 }
 
 // ── SCREEN 2: AUTH ─────────────────────────────────────────────────────────────
-function Auth({defaultTab, goToApp, goToLanding}) {
+function Auth({defaultTab, goToLanding}) {
   const [tab, setTab] = React.useState(defaultTab || 'signup');
   const [form, setForm] = React.useState({name:'',email:'',company:'',password:''});
   const [errors, setErrors] = React.useState({});
@@ -2267,10 +2323,10 @@ function Auth({defaultTab, goToApp, goToLanding}) {
       <aside className="auth-aside">
         <div onClick={goToLanding}><Brand/></div>
         <div className="auth-hero">
-          <div className="auth-quote">Routine IT requests, resolved in seconds — not hours.</div>
-          <div className="auth-quote-sub">Automated L1 resolution and an engineer support hub, in one platform.</div>
+          <div className="auth-quote">Raise it. Track it. Resolve it.</div>
+          <div className="auth-quote-sub">Staff raise IT requests and engineers reply and resolve them, all in one place.</div>
           <div className="auth-feed">
-            {[['shield','Password reset — Sarah Chen','4s'],['lock','Account unlock — Outlook','11s'],['userPlus','SharePoint access — approved','2m']].map(([i,t,s])=>(
+            {[['shield','Password reset · Sarah Chen','1h'],['lock','Account unlock · Outlook','3h'],['userPlus','SharePoint access · approved','1d']].map(([i,t,s])=>(
               <div key={t} className="auth-feed-item">
                 <div className="auth-feed-icon"><Ic name={i} size={14}/></div>
                 <span className="t">{t}</span>
@@ -2281,7 +2337,7 @@ function Auth({defaultTab, goToApp, goToLanding}) {
           </div>
         </div>
         <div className="auth-testimonial">
-          “Two-thirds of our tickets now close themselves. The team finally has time for real projects.”
+          “Every request is tracked until it's resolved. Nothing gets lost in someone's inbox any more.”
           <div className="auth-testimonial-who"><div className="avatar">JO</div><div><b>Jordan Okafor</b>Head of IT, Northwind Logistics</div></div>
         </div>
       </aside>
@@ -2333,10 +2389,11 @@ function Auth({defaultTab, goToApp, goToLanding}) {
 
             <div className="or-row">or</div>
 
-            <button className="btn btn-secondary btn-lg w-full" onClick={goToApp}>
+            <button className="btn btn-secondary btn-lg w-full" onClick={()=>setErrors({microsoft:'Microsoft sign in is not set up yet. Please use your email and password.'})}>
               <svg width="18" height="18" viewBox="0 0 21 21"><rect x="0" y="0" width="10" height="10" fill="#F25022"/><rect x="11" y="0" width="10" height="10" fill="#7FBA00"/><rect x="0" y="11" width="10" height="10" fill="#00A4EF"/><rect x="11" y="11" width="10" height="10" fill="#FFB900"/></svg>
               Continue with Microsoft
             </button>
+            <InlineError message={errors.microsoft}/>
 
             <div style={{textAlign:'center',marginTop:22,fontSize:13.5,color:'var(--text-muted)'}}>
               {tab==='signup'?<>Already have an account? <span onClick={()=>setTab('signin')} className="link">Sign in</span></>:<>Don't have an account? <span onClick={()=>setTab('signup')} className="link">Sign up free</span></>}
@@ -2357,11 +2414,12 @@ function Root() {
   const [authTab, setAuthTab] = useState('signup');
 
   const goToAuth = (tab='signup') => { setAuthTab(tab); setScreen('auth'); window.scrollTo(0,0); };
-  const goToApp = () => setScreen('app');
   const goToLanding = () => { setScreen('landing'); window.scrollTo(0,0); };
 
-  if(screen==='landing') return <Landing goToAuth={goToAuth}/>;
-  if(screen==='auth') return <Auth defaultTab={authTab} goToApp={goToApp} goToLanding={goToLanding}/>;
+  // Login, signup and sign out all reload the page, so CURRENT_USER is always
+  // the real session user here. The app shell never renders without one.
+  if(screen==='auth') return <Auth defaultTab={authTab} goToLanding={goToLanding}/>;
+  if(screen==='landing' || !CURRENT_USER) return <Landing goToAuth={goToAuth}/>;
   return <AppWithSignOut goToLanding={goToLanding}/>;
 }
 
@@ -2375,6 +2433,14 @@ function AppWithSignOut({goToLanding}) {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const menuRef = useRef(null);
+  const isAdmin = defaultRole === 'Admin';
+
+  // One tickets list for the whole app, so a reply or resolve shows on every page.
+  const [tickets, setTickets] = useState(TICKETS);
+  const loadTickets = () => api('/api/tickets').then(data => { setTickets(data.tickets); return data.tickets; });
+  const upsertTicket = (ticket) => setTickets(ts =>
+    ts.some(x=>x.id===ticket.id) ? ts.map(x=>x.id===ticket.id?ticket:x) : [ticket, ...ts]);
+  const ticketProps = { tickets, loadTickets, upsertTicket };
 
   const handleRoleChange = (r) => { setRole(r); setRoleMenuOpen(false); setActivePage(NAV[r][0].id); };
 
@@ -2386,12 +2452,12 @@ function AppWithSignOut({goToLanding}) {
 
   const renderPage = () => {
     switch(activePage) {
-      case 'portal': return <TicketPortal setActivePage={setActivePage}/>;
+      case 'portal': return <TicketPortal {...ticketProps}/>;
       case 'kb': return <KnowledgeBase/>;
-      case 'account': return <AccountProfile/>;
-      case 'agent-dashboard': return <AgentDashboard setActivePage={setActivePage} setSelectedTicket={setSelectedTicket}/>;
-      case 'agent-inbox': return <AgentInbox setActivePage={setActivePage} setSelectedTicket={setSelectedTicket}/>;
-      case 'agent-ticket': return <AgentTicketView ticketId={selectedTicket||TICKETS[0].id} setActivePage={setActivePage}/>;
+      case 'account': return <AccountProfile tickets={tickets}/>;
+      case 'agent-dashboard': return <AgentDashboard {...ticketProps} setActivePage={setActivePage} setSelectedTicket={setSelectedTicket}/>;
+      case 'agent-inbox': return <AgentInbox {...ticketProps} setActivePage={setActivePage} setSelectedTicket={setSelectedTicket}/>;
+      case 'agent-ticket': return <AgentTicketView {...ticketProps} ticketId={selectedTicket} setActivePage={setActivePage}/>;
       case 'agent-kb': return <KnowledgeHub/>;
       case 'admin-analytics': return <AnalyticsDashboard/>;
       case 'admin-users': return <UserManagement/>;
@@ -2448,7 +2514,13 @@ function AppWithSignOut({goToLanding}) {
             <div className="topbar-heading">{PAGE_TITLES[activePage]||''}</div>
           </div>
           <div className="topbar-search"><Ic name="search" size={15}/>Search tickets, articles…<kbd>⌘K</kbd></div>
-          <div className="role-switcher" onClick={()=>setRoleMenuOpen(o=>!o)} ref={menuRef}>
+          {!isAdmin && (
+            <div className="role-switcher" style={{cursor:'default'}}>
+              <div className="role-dot" style={{background:ROLE_COLORS[role],color:ROLE_COLORS[role]}}/>
+              {role}
+            </div>
+          )}
+          {isAdmin && <div className="role-switcher" onClick={()=>setRoleMenuOpen(o=>!o)} ref={menuRef}>
             <div className="role-dot" style={{background:ROLE_COLORS[role],color:ROLE_COLORS[role]}}/>
             {role}
             <span style={{fontSize:10,opacity:0.5}}>▾</span>
@@ -2464,7 +2536,7 @@ function AppWithSignOut({goToLanding}) {
                 ))}
               </div>
             )}
-          </div>
+          </div>}
           {CURRENT_USER
             ? <div className="avatar" title={CURRENT_USER.name}>{initials(CURRENT_USER.name)}</div>
             : <div className="avatar" title="Account">?</div>

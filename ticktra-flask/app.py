@@ -41,6 +41,12 @@ ROLE_PAGES = {
 }
 
 
+def short_name(name):
+    # "Alex Martinez" -> "Alex M.", the format Ticket.assigned uses.
+    parts = name.split()
+    return f"{parts[0]} {parts[-1][0]}." if len(parts) > 1 else name
+
+
 def next_ticket_id():
     count = Ticket.query.count()
     return f"TKT-{count + 1:03d}"
@@ -120,13 +126,21 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+def visible_tickets(user):
+    # End users see only their own tickets; agents and admins see all.
+    query = Ticket.query
+    if user.role == "End User":
+        query = query.filter_by(user_id=user.id)
+    return query.order_by(Ticket.created.desc()).all()
+
+
 @app.get("/api/bootstrap")
 def bootstrap():
     user = current_user()
     return jsonify({
-        "tickets": [t.to_dict() for t in Ticket.query.order_by(Ticket.created.desc()).all()],
+        "tickets": [t.to_dict() for t in visible_tickets(user)] if user else [],
         "kb_articles": [k.to_dict() for k in KBArticle.query.all()],
-        "users": [u.to_dict() for u in User.query.all()],
+        "users": [u.to_dict() for u in User.query.all()] if user and user.role == "Admin" else [],
         "current_user": user.to_dict() if user else None,
     })
 
@@ -202,11 +216,7 @@ def list_tickets():
     if not user:
         return jsonify({"error": "Not signed in."}), 401
 
-    query = Ticket.query
-    if user.role == "End User":
-        query = query.filter_by(user_id=user.id)
-    tickets = query.order_by(Ticket.created.desc()).all()
-    return jsonify({"tickets": [t.to_dict() for t in tickets]})
+    return jsonify({"tickets": [t.to_dict() for t in visible_tickets(user)]})
 
 
 @app.post("/api/tickets")
@@ -235,6 +245,8 @@ def add_message(ticket_id):
         return jsonify({"error": "Not signed in."}), 401
 
     ticket = Ticket.query.get_or_404(ticket_id)
+    if user.role == "End User" and ticket.user_id != user.id:
+        return jsonify({"error": "You can only reply to your own tickets."}), 403
     text = (request.get_json(force=True) or {}).get("text", "").strip()
     if not text:
         return jsonify({"error": "Message text is required."}), 400
@@ -277,6 +289,8 @@ def update_ticket(ticket_id):
         if data["priority"] not in ("P1", "P2", "P3"):
             return jsonify({"error": "Invalid priority."}), 400
         ticket.priority = data["priority"]
+    if data.get("assign_to_me"):
+        ticket.assigned = short_name(user.name)
 
     db.session.commit()
     return jsonify({"ticket": ticket.to_dict()})
