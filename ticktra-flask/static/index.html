@@ -586,6 +586,7 @@
   .lp-metric-l { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
 
   .lp-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .lp-features.two { grid-template-columns: repeat(2, 1fr); }
   .lp-feature { padding: 28px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); transition: border-color .15s, box-shadow .15s; }
   .lp-feature:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
   .lp-feature-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--tone-fg, var(--brand)); background: var(--tone-bg, var(--brand-50)); }
@@ -701,7 +702,7 @@
     .lp-metrics { grid-template-columns: 1fr 1fr; }
     .lp-metric:nth-child(2) { border-right: none; }
     .lp-metric:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
-    .lp-features, .lp-steps, .lp-layers, .lp-pricing { grid-template-columns: 1fr; }
+    .lp-features, .lp-features.two, .lp-steps, .lp-layers, .lp-pricing { grid-template-columns: 1fr; }
     .lp-quote { grid-template-columns: 1fr; }
     .lp-quote-stats { border-left: none; border-top: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; }
     .lp-footer-grid { grid-template-columns: 1fr 1fr; }
@@ -1987,26 +1988,17 @@ function Landing({goToAuth}) {
   const scrollTo = (id) => { const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); };
 
   const mockRows = [
-    { t:'Password reset — Sarah Chen', s:'resolved', label:'Auto-resolved', time:'4s', icon:'shield' },
-    { t:'Account unlock — Finance team', s:'resolved', label:'Auto-resolved', time:'11s', icon:'lock' },
-    { t:'SharePoint access — Q3 Planning', s:'in-progress', label:'Awaiting approval', time:'2m', icon:'userPlus' },
-    { t:'VPN not connecting from home', s:'open', label:'Routed to L2', time:'6m', icon:'globe' },
-  ];
-
-  const plans = [
-    { name:'Starter', price:'£0', unit:'up to 3 agents', desc:'For small teams getting their service desk organised.', cta:'Start free',
-      items:['Ticket portal & inbox','Knowledge base','Email notifications','Community support'] },
-    { name:'Growth', price:'£29', unit:'per agent / month', desc:'Automate L1 and give engineers answers, not searches.', cta:'Start 14-day trial', featured:true,
-      items:['Everything in Starter','Automated password resets & unlocks','Entra ID & Okta integration','AI-assisted diagnosis','SLA policies & analytics'] },
-    { name:'Enterprise', price:'Custom', unit:'', desc:'For organisations with compliance and scale needs.', cta:'Talk to sales',
-      items:['Everything in Growth','SSO / SAML & SCIM','Audit logs & data residency','Dedicated success manager','99.9% uptime SLA'] },
+    { t:'TKT-014 Outlook keeps asking for my password', s:'open', label:'Open', time:'P2', icon:'mail' },
+    { t:'TKT-013 Locked out of my laptop', s:'in-progress', label:'In progress', time:'P1', icon:'lock' },
+    { t:'TKT-012 Access to the Finance SharePoint site', s:'open', label:'Open', time:'P3', icon:'userPlus' },
+    { t:'TKT-011 VPN not connecting from home', s:'resolved', label:'Resolved', time:'P2', icon:'globe' },
   ];
 
   const faqs = [
-    ['How long does setup take?', 'Most teams connect their identity provider and go live in under an hour. Our onboarding flow walks you through connecting Entra ID or Okta, importing users and publishing your first knowledge base articles.'],
-    ['Which requests can be resolved automatically?', 'Out of the box: password resets, account unlocks, MFA re-registration, group and SharePoint access requests, software installs and onboarding/offboarding checklists. You can add your own flows too.'],
-    ['Is it secure?', `${BRAND} uses least-privilege scopes on your identity provider, requires MFA verification before any self-service action, and keeps a full audit trail of every automated change.`],
-    ['Can we keep our existing helpdesk?', `Yes. ${BRAND} can sit in front of your current tool, resolve what it can, and hand everything else over via webhook or email — or you can run your whole service desk on ${BRAND}.`],
+    ['Who is Ticktra for?', 'IT teams at small and medium businesses. It gives staff one simple place to ask for help.'],
+    ['What can staff do?', 'Staff log in, raise tickets and follow their progress. They can also read help articles in the knowledge base.'],
+    ['What can engineers do?', 'Engineers see incoming tickets, reply to the user and mark tickets as resolved. Admins can also see everyone who uses Ticktra.'],
+    ['How do engineers know what to do first?', 'Each ticket has a priority and a response time target. Engineers can see which tickets need attention soonest.'],
   ];
 
   return (
@@ -2015,9 +2007,8 @@ function Landing({goToAuth}) {
         <div className="lp-container lp-nav-inner">
           <Brand/>
           <div className="lp-links">
-            <button onClick={()=>scrollTo('product')}>Product</button>
             <button onClick={()=>scrollTo('how')}>How it works</button>
-            <button onClick={()=>scrollTo('pricing')}>Pricing</button>
+            <button onClick={()=>scrollTo('product')}>Features</button>
             <button onClick={()=>scrollTo('faq')}>FAQ</button>
           </div>
           <div className="lp-actions">
@@ -2030,17 +2021,11 @@ function Landing({goToAuth}) {
       {/* HERO */}
       <section className="lp-hero">
         <div className="lp-container">
-          <div className="lp-eyebrow"><b>New</b> Automated L1 resolution is now generally available</div>
-          <h1 className="lp-h1">IT support that<br/><span className="grad-text">resolves itself.</span></h1>
-          <p className="lp-lead">{BRAND} closes routine IT requests — password resets, account unlocks, access requests — in seconds, so your team can focus on the work that actually needs them.</p>
+          <h1 className="lp-h1">Every IT request,<br/><span className="grad-text">tracked until it's resolved.</span></h1>
+          <p className="lp-lead">{BRAND} gives your staff one place to raise IT tickets. Your engineers see each request, reply to the user and close it when it is fixed.</p>
           <div className="lp-cta">
-            <button className="btn btn-primary btn-lg" onClick={()=>goToAuth('signup')}>Start free trial<Ic name="arrow" size={17} stroke={2.2}/></button>
-            <button className="btn btn-secondary btn-lg" onClick={()=>goToAuth('signin')}>Book a demo</button>
-          </div>
-          <div className="lp-note">
-            <span><Ic name="check" size={14} stroke={2.6}/>14-day free trial</span>
-            <span><Ic name="check" size={14} stroke={2.6}/>No credit card required</span>
-            <span><Ic name="check" size={14} stroke={2.6}/>Live in under an hour</span>
+            <button className="btn btn-primary btn-lg" onClick={()=>goToAuth('signup')}>Request a demo<Ic name="arrow" size={17} stroke={2.2}/></button>
+            <button className="btn btn-secondary btn-lg" onClick={()=>scrollTo('how')}>See how it works</button>
           </div>
         </div>
 
@@ -2061,11 +2046,11 @@ function Landing({goToAuth}) {
               </div>
               <div className="lp-main">
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
-                  <div><div style={{fontSize:17,fontWeight:700,letterSpacing:'-0.02em'}}>Good morning, Alex</div><div style={{fontSize:12.5,color:'var(--text-muted)'}}>12 requests resolved automatically overnight</div></div>
-                  <span className="badge badge-resolved">Automation on</span>
+                  <div><div style={{fontSize:17,fontWeight:700,letterSpacing:'-0.02em'}}>Good morning, Alex</div><div style={{fontSize:12.5,color:'var(--text-muted)'}}>3 new tickets since yesterday</div></div>
+                  <span className="badge badge-in-progress">Agent view</span>
                 </div>
                 <div className="lp-stats">
-                  {[['Auto-resolved','68%','↑ 9% this week'],['Avg resolution','18m','↓ 3m faster'],['Open tickets','14','4 need attention'],['CSAT','4.8','↑ 0.2']].map(([l,v,t])=>(
+                  {[['Open','8','2 due today'],['In progress','3','1 high priority'],['Resolved','11','this week'],['Raised','14','this week']].map(([l,v,t])=>(
                     <div key={l} className="lp-stat"><div className="lp-stat-l">{l}</div><div className="lp-stat-v">{v}</div><div className="lp-stat-t">{t}</div></div>
                   ))}
                 </div>
@@ -2085,43 +2070,37 @@ function Landing({goToAuth}) {
         </div>
       </section>
 
-      <section className="lp-logos-wrap lp-container">
-        <p>Works with the identity and collaboration stack you already run</p>
-        <div className="lp-logos">
-          {[['shield','Entra ID'],['lock','Okta'],['mail','Microsoft 365'],['chat','Slack'],['globe','Google Workspace']].map(([i,n])=>(
-            <span key={n}><Ic name={i} size={18}/>{n}</span>
-          ))}
-        </div>
-      </section>
-
-      {/* METRICS */}
-      <section className="lp-section lp-container">
-        <div className="lp-metrics">
-          {[['68%','of L1 tickets resolved with zero agent touch'],['<30s','to reset a password or unlock an account'],['18m','average handle time on escalated tickets'],['24/7','self-service, outside business hours too']].map(([v,l])=>(
-            <div key={l} className="lp-metric"><div className="lp-metric-v">{v}</div><div className="lp-metric-l">{l}</div></div>
+      {/* HOW IT WORKS */}
+      <section className="lp-section lp-container" id="how">
+        <div className="lp-kicker">How it works</div>
+        <h2 className="lp-h2">From raised to resolved in three steps</h2>
+        <p className="lp-sub">Every request follows the same simple path.</p>
+        <div className="lp-steps">
+          {[
+            ['01','Staff raise a ticket','They log in, give the problem a title and choose a category.'],
+            ['02','Ticktra logs it','The ticket gets an ID, a priority and a response time target.'],
+            ['03','An engineer resolves it','The engineer picks it up, replies to the user and marks the ticket as resolved.'],
+          ].map(([n,t,d])=>(
+            <div key={n} className="lp-step"><div className="lp-step-num">{n}</div><h3>{t}</h3><p>{d}</p></div>
           ))}
         </div>
       </section>
 
       {/* FEATURES */}
       <section className="lp-section lp-container" id="product">
-        <div className="lp-kicker">Product</div>
-        <h2 className="lp-h2">Automation where your service desk feels it most</h2>
-        <p className="lp-sub">Take repetitive work off your team, and give engineers the context they need for everything else.</p>
-        <div className="lp-features">
+        <div className="lp-kicker">Features</div>
+        <h2 className="lp-h2">What your team gets today</h2>
+        <p className="lp-sub">The essentials of a service desk, kept simple.</p>
+        <div className="lp-features two">
           {[
-            { icon:'lock', tone:'teal', tag:'Layer 1', title:'Identity requests, resolved instantly',
-              desc:'Password resets and account unlocks run directly against Entra ID or Okta — verified, logged and closed in seconds.' },
-            { icon:'refresh', tone:'indigo', tag:'Layer 1', title:'Onboarding on autopilot',
-              desc:'HR triggers kick off joiner, mover and leaver checklists automatically. New starters are ready on day one.' },
-            { icon:'cpu', tone:'violet', tag:'Layer 2', title:'AI-assisted diagnosis',
-              desc:'Engineers describe the issue and get similar past tickets, proven fixes and runbooks — before they start searching.' },
-            { icon:'gauge', tone:'amber', tag:'Insights', title:'SLAs you can actually hit',
-              desc:'Priority-based SLA policies, breach warnings and a live queue that always shows the most urgent work first.' },
-            { icon:'book', tone:'teal', tag:'Self-service', title:'A knowledge base that writes itself',
-              desc:'Turn resolved tickets into published articles in one click, so the next person never has to ask.' },
-            { icon:'chat', tone:'indigo', tag:'Everywhere', title:'Help where people already are',
-              desc:'An assistant in your portal, Slack and Teams that answers questions and raises tickets when it needs a human.' },
+            { icon:'lock', tone:'teal', tag:'Access', title:'Secure sign in',
+              desc:'Staff create an account and log in securely before they raise or view tickets.' },
+            { icon:'gauge', tone:'amber', tag:'Tracking', title:'Ticket IDs and response targets',
+              desc:'Every ticket gets its own ID and a response time target, so nothing is lost.' },
+            { icon:'chat', tone:'indigo', tag:'Engineers', title:'One inbox for engineers',
+              desc:'Engineers see new tickets, reply to the user and mark each one as resolved.' },
+            { icon:'shield', tone:'violet', tag:'Roles', title:'Three clear roles',
+              desc:'End Users raise tickets, Agents work on them and Admins oversee the team.' },
           ].map(f=>(
             <div key={f.title} className={`lp-feature tone-${f.tone}`}>
               <div className="lp-feature-icon"><Ic name={f.icon} size={20}/></div>
@@ -2133,90 +2112,13 @@ function Landing({goToAuth}) {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="lp-section lp-container" id="how">
-        <div className="lp-kicker">How it works</div>
-        <h2 className="lp-h2">Live in an afternoon. Paying for itself by Friday.</h2>
-        <p className="lp-sub">Routine requests close themselves. Everything else lands with an engineer who already has the answer in front of them.</p>
-        <div className="lp-steps">
-          {[
-            ['01','Connect your identity provider','Grant least-privilege access to Entra ID or Okta and import your users in a few clicks.'],
-            ['02','Switch on automations','Pick the flows you want to automate — resets, unlocks, access requests, onboarding — and set approval rules.'],
-            ['03','Watch the queue shrink','Routine tickets resolve on their own. Your team sees only what needs a human, with context attached.'],
-          ].map(([n,t,d])=>(
-            <div key={n} className="lp-step"><div className="lp-step-num">{n}</div><h3>{t}</h3><p>{d}</p></div>
-          ))}
-        </div>
-        <div className="lp-layers">
-          <div className="lp-layer primary">
-            <div className="lp-layer-head">
-              <div><div className="lp-layer-num">LAYER 01</div><div className="lp-layer-title">Automated resolution — 1st line</div></div>
-            </div>
-            <ul>
-              {[
-                'Password resets & account unlocks via Entra ID and Okta',
-                'Software installation requests through the self-service portal',
-                'Guided troubleshooting for common errors (VPN, printers, Outlook)',
-                'Known-outage detection with automatic status replies',
-                'Onboarding and offboarding checklists triggered by HR',
-              ].map(item=>(
-                <li key={item}><span className="lp-check"><Ic name="check" size={12} stroke={3}/></span>{item}</li>
-              ))}
-            </ul>
+      {/* COMING SOON */}
+      <section className="lp-section lp-container" id="soon">
+        <div className="lp-layer primary">
+          <div className="lp-layer-head">
+            <div><div className="lp-layer-num">COMING SOON</div><div className="lp-layer-title">Automatic resolution for routine requests</div></div>
           </div>
-          <div className="lp-layer">
-            <div className="lp-layer-head">
-              <div><div className="lp-layer-num">LAYER 02</div><div className="lp-layer-title">Engineer support hub — 2nd & 3rd line</div></div>
-            </div>
-            <ul>
-              {[
-                'Searchable history of past tickets, resolutions and runbooks',
-                'AI-suggested fixes based on similar resolved tickets',
-                'Internal notes, SLA timers and full requester context in one view',
-                'One-click “resolve & document” to grow the knowledge base',
-              ].map(item=>(
-                <li key={item}><span className="lp-check muted"><Ic name="check" size={12} stroke={3}/></span>{item}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIAL */}
-      <section className="lp-section lp-container">
-        <div className="lp-quote">
-          <div className="lp-quote-body">
-            <div className="lp-quote-text">“We switched {BRAND} on in a Tuesday afternoon. By the end of the month, two-thirds of our tickets were closing themselves and the team finally had time for projects.”</div>
-            <div className="lp-quote-who">
-              <div className="avatar">JO</div>
-              <div><div className="lp-quote-name">Jordan Okafor</div><div className="lp-quote-role">Head of IT, Northwind Logistics</div></div>
-            </div>
-          </div>
-          <div className="lp-quote-stats">
-            <div><div className="lp-quote-stat-v">-64%</div><div className="lp-quote-stat-l">tickets reaching an agent</div></div>
-            <div><div className="lp-quote-stat-v">11 hrs</div><div className="lp-quote-stat-l">saved per engineer, per week</div></div>
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section className="lp-section lp-container lp-center" id="pricing">
-        <div className="lp-kicker">Pricing</div>
-        <h2 className="lp-h2">Simple pricing that scales with your team</h2>
-        <p className="lp-sub">Start free. Upgrade when automation starts saving you hours — usually in the first week.</p>
-        <div className="lp-pricing">
-          {plans.map(p=>(
-            <div key={p.name} className={`lp-plan ${p.featured?'featured':''}`}>
-              {p.featured && <div className="lp-plan-badge">Most popular</div>}
-              <div className="lp-plan-name">{p.name}</div>
-              <div className="lp-plan-desc">{p.desc}</div>
-              <div className="lp-plan-price">{p.price}{p.unit && <small>{p.unit}</small>}</div>
-              <button className={`btn btn-lg w-full ${p.featured?'btn-primary':'btn-secondary'}`} onClick={()=>goToAuth('signup')}>{p.cta}</button>
-              <ul>
-                {p.items.map(i=><li key={i}><Ic name="check" size={14} stroke={2.6}/>{i}</li>)}
-              </ul>
-            </div>
-          ))}
+          <p style={{padding:'14px 26px 28px',fontSize:15,lineHeight:1.65,color:'rgba(255,255,255,0.85)',maxWidth:720}}>We are building a way to resolve routine requests automatically, such as password resets, account unlocks and access requests. It will use AI and Microsoft 365 to close these tickets without an engineer. It is not available yet.</p>
         </div>
       </section>
 
@@ -2236,11 +2138,10 @@ function Landing({goToAuth}) {
       {/* CTA */}
       <section className="lp-final lp-container">
         <div className="lp-final-card">
-          <h2>Give your service desk its time back.</h2>
-          <p>Start your 14-day free trial. No credit card, no sales call.</p>
+          <h2>See Ticktra in action.</h2>
+          <p>Get a short walkthrough of how your staff raise tickets and your engineers resolve them.</p>
           <div className="lp-cta">
-            <button className="btn btn-white btn-lg" onClick={()=>goToAuth('signup')}>Start free trial<Ic name="arrow" size={17} stroke={2.2}/></button>
-            <button className="btn btn-outline-light btn-lg" onClick={()=>goToAuth('signin')}>Sign in</button>
+            <button className="btn btn-white btn-lg" onClick={()=>goToAuth('signup')}>Request a demo<Ic name="arrow" size={17} stroke={2.2}/></button>
           </div>
         </div>
       </section>
@@ -2250,15 +2151,14 @@ function Landing({goToAuth}) {
           <div className="lp-footer-grid">
             <div>
               <Brand/>
-              <div className="lp-footer-tag">{BRAND_TAGLINE} Automated L1 resolution and an engineer support hub for modern IT teams.</div>
+              <div className="lp-footer-tag">Simple IT ticketing for small and medium businesses.</div>
             </div>
-            {[['Product',['Features','Integrations','Pricing','Changelog']],['Company',['About','Customers','Careers','Contact']],['Resources',['Docs','Security','Status','Privacy']]].map(([h,items])=>(
+            {[['Product',['How it works','Features','FAQ']],['Company',['About','Contact']],['Resources',['Knowledge base','Privacy']]].map(([h,items])=>(
               <div key={h} className="lp-footer-col"><h4>{h}</h4>{items.map(i=><span key={i}>{i}</span>)}</div>
             ))}
           </div>
           <div className="lp-footer-bottom">
-            <span>© {new Date().getFullYear()} {BRAND} Ltd. All rights reserved.</span>
-            <span className="lp-status">All systems operational</span>
+            <span>© {new Date().getFullYear()} {BRAND}. All rights reserved.</span>
           </div>
         </div>
       </footer>
