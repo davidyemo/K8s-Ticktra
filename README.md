@@ -15,13 +15,13 @@ Users reach the app at app.ticktra.io over HTTPS through the NGINX Ingress Contr
 
 ## Demo
 
-![Ticktra demo](docs/demo.gif)
+![Ticktra demo](Images/Demo.gif)
 
 *A user raises a ticket and an engineer resolves it, running live on AKS.*
 
 ## Architecture
 
-![Ticktra platform architecture](docs/images/architecture.png)
+![Ticktra platform architecture](Images/architecture.png)
 
 *Click the diagram to view it full size.*
 
@@ -30,7 +30,7 @@ The diagram shows two journeys through the platform.
 **From code to production (left to right)**
 
 1. A developer pushes code to **GitHub**, which triggers **GitHub Actions**.
-2. **Infrastructure:** Checkov scans the Terraform code then Terraform creates or updates the Azure resources. It's state is stored separately in its own resource group.
+2. **Infrastructure:** Checkov scans the Terraform code then Terraform creates or updates the Azure resources. Its state is stored separately in its own resource group.
 3. **Application:** the Docker image is built, scanned with Trivy for security vulnerabilities and pushed to the **Azure Container Registry**.
 4. **ArgoCD** running inside the AKS cluster pulls the changes from GitHub and deploys the new version. The AKS cluster pulls the image from the Azure Container Registry.
 
@@ -63,3 +63,61 @@ The diagram shows two journeys through the platform.
 | **Microsoft Entra ID** | Controls who can access the cluster |
 | **Prometheus** | Collects metrics from the cluster and the app |
 | **Grafana** | Displays the metrics in dashboards |
+
+
+## Project Structure
+
+```
+K8s-Ticktra/
+├── .github/
+│   └── workflows/
+│       ├── build-push.yml            # Build, smoke test, Trivy scan, push to ACR, update image tag
+│       ├── terraform-plan.yml        # Checkov + plan on push to dev, opens a PR
+│       ├── terraform-apply.yml       # Applies on merge to main
+│       └── terraform-destroy.yml     # Manual teardown
+├── docs/
+│   └── architecture.png              # Architecture diagram
+├── k8s/
+│   ├── addons/
+│   │   ├── dashboards/
+│   │   │   └── ticktra-app.json      # Grafana dashboard
+│   │   ├── cluster-issuers.yml       # cert-manager ClusterIssuers
+│   │   ├── external-dns-values.yml   # ExternalDNS Helm values
+│   │   └── monitoring-values.yml     # Prometheus/Grafana Helm values
+│   ├── app/
+│   │   ├── deployment.yml
+│   │   ├── service.yml
+│   │   └── ingress.yml
+│   └── argocd/
+│       └── ticktra-app.yml           # Argo CD Application
+├── terraform/
+│   ├── bootstrap/                    # Remote state backend setup
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── providers.tf
+│   │   └── variables.tf
+│   ├── modules/
+│   │   ├── acr/                      # Azure Container Registry
+│   │   ├── aks/                      # AKS cluster with Entra ID login
+│   │   ├── identity/                 # Entra ID admin and read-only groups
+│   │   └── networking/               # VNet, subnets and NSGs
+│   ├── backend.tf
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── providers.tf
+│   └── variables.tf
+├── ticktra-flask/
+│   ├── static/
+│   │   └── index.html                # Frontend
+│   ├── app.py                        # Flask application
+│   ├── models.py                     # Database models
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   └── README.md
+├── .gitignore
+├── .trivyignore
+├── LICENSE
+└── README.md
+
+```
