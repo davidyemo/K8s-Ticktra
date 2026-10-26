@@ -61,6 +61,7 @@ The diagram shows two journeys through the platform.
 
 ## Project Structure
 
+```
 K8s-Ticktra/
 ├── .github/
 │   └── workflows/
@@ -113,6 +114,4 @@ K8s-Ticktra/
 ├── LICENSE
 └── README.md
 
-## Workflow
-
-Cont
+```
