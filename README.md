@@ -19,6 +19,8 @@ https://github.com/user-attachments/assets/a3955844-0fe6-4bea-a39f-b5be657b8470
 
 *A user raises a ticket and an engineer resolves it, running live on AKS.*
 
+> **Note:** The app ran live at `app.ticktra.io`, with Grafana at `grafana.ticktra.io`. The environment has been torn down to save costs and can be rebuilt from this repo with Terraform and the pipelines. The demo video above shows it running.
+
 ## Architecture
 
 ![Ticktra platform architecture](Images/architecture.png)
