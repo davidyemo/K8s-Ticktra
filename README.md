@@ -15,7 +15,7 @@ Users reach the app at app.ticktra.io over HTTPS through the NGINX Ingress Contr
 
 ## Demo
 
-![Ticktra demo](Images/Demo.gif)
+![Ticktra demo](Images/Demo.mp4)
 
 *A user raises a ticket and an engineer resolves it, running live on AKS.*
 
@@ -75,8 +75,9 @@ K8s-Ticktra/
 │       ├── terraform-plan.yml        # Checkov + plan on push to dev, opens a PR
 │       ├── terraform-apply.yml       # Applies on merge to main
 │       └── terraform-destroy.yml     # Manual teardown
-├── docs/
-│   └── architecture.png              # Architecture diagram
+├── Images/
+│   ├── architecture.png              # Architecture diagram
+│   └── Demo.gif                      # Demo of the ticket flow
 ├── k8s/
 │   ├── addons/
 │   │   ├── dashboards/
