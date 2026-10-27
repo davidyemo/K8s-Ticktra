@@ -122,3 +122,31 @@ K8s-Ticktra/
 └── README.md
 
 ```
+
+## Argo CD: GitOps
+
+Argo CD keeps the cluster in sync with Git. It watches the `main` branch, and when the pipeline commits a new image tag, it rolls out the new version automatically. If anything in the cluster is changed by hand, Argo CD puts it back to match Git. Every rollout is saved as a revision, so any version can be rolled back.
+
+![Argo CD application tree](Images/argocd.png)
+
+*The app synced to the latest commit on main, with its Service, Deployment, Ingress and TLS certificate. Each box on the right is a previous revision.*
+
+## Prometheus & Grafana: Monitoring
+
+Prometheus collects metrics from the nodes, the Kubernetes API and every pod, about every 30 seconds. Grafana reads those metrics and shows them on a custom Ticktra dashboard at grafana.ticktra.io. Both are installed with the kube-prometheus-stack Helm chart. Prometheus and Argo CD are kept private and accessed through `kubectl port-forward`, because they have admin access to the cluster.
+
+![Prometheus target health](Images/Prometheus.png)
+
+*Prometheus scrape targets, all healthy. The AKS control plane is managed by Azure, so those targets are not reachable from inside the cluster.*
+
+![Grafana dashboard](Images/Grafana.png)
+
+*At 15:28 Argo CD rolled out the change from two replicas to one. Memory halves from about 107 MiB to 53 MiB, CPU spikes briefly while the new pod starts, and there have been no restarts since.*
+
+## Cloudflare & ExternalDNS: Automatic DNS
+
+The ticktra.io domain is managed in Cloudflare. ExternalDNS runs in the cluster and watches every Ingress. When it finds a new hostname, such as app.ticktra.io or grafana.ticktra.io, it creates the DNS record in Cloudflare automatically, pointing to the AKS load balancer. It uses a scoped Cloudflare API token stored as a Kubernetes secret, and is set to `upsert-only`, so it can add and update records but never delete them.
+
+![Cloudflare DNS records](Images/Cloudflare.png)
+
+*The A records point both hostnames to the same load balancer IP, and NGINX routes each one to the right service. The TXT records mark them as owned by this cluster (`owner=ticktra-aks`), so ExternalDNS never changes records it did not create. The records are set to DNS only, so Let's Encrypt can reach the cluster directly to issue certificates.*
