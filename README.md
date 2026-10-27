@@ -15,7 +15,7 @@ Users reach the app at app.ticktra.io over HTTPS through the NGINX Ingress Contr
 
 ## Demo
 
-![Ticktra demo](Images/Demo.mp4)
+https://github.com/user-attachments/assets/a3955844-0fe6-4bea-a39f-b5be657b8470
 
 *A user raises a ticket and an engineer resolves it, running live on AKS.*
 
