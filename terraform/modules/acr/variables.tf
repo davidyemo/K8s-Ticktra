@@ -13,3 +13,9 @@ variable "container_registry_name" {
   type        = string
   default     = "ticktraregistry1"
 }
+
+variable "acr_sku" {
+  description = "Pricing tier of the container registry (Basic, Standard or Premium)"
+  type        = string
+  default     = "Premium"
+}
