@@ -79,7 +79,11 @@ K8s-Ticktra/
 │       └── terraform-destroy.yml     # Manual teardown
 ├── Images/
 │   ├── architecture.png              # Architecture diagram
-│   └── Demo.gif                      # Demo of the ticket flow
+│   ├── argocd.png                    # Argo CD application tree
+│   ├── Cloudflare.png                # DNS records created by ExternalDNS
+│   ├── Demo.mp4                      # Demo of the ticket flow
+│   ├── Grafana.png                   # Ticktra Grafana dashboard
+│   └── Prometheus.png                # Prometheus target health
 ├── k8s/
 │   ├── addons/
 │   │   ├── dashboards/
