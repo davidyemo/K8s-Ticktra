@@ -8,6 +8,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
     name       = var.node_pool_name
     node_count = var.node_count
     vm_size    = var.vm_size
+
+    upgrade_settings {
+      max_surge                     = "10%"
+      drain_timeout_in_minutes      = 0
+      node_soak_duration_in_minutes = 0
+    }
   }
 
   node_provisioning_profile {
