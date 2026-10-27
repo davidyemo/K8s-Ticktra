@@ -1,35 +1,40 @@
-
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "ticktra-aks-cluster"
+  name                = var.cluster_name
   location            = var.location
   resource_group_name = var.resource_group_name
-  dns_prefix          = "ticktraaks"
+  dns_prefix          = var.dns_prefix
 
   default_node_pool {
-    name       = "default"
-    node_count = 2
-    vm_size    = "Standard_D2als_v6"
+    name       = var.node_pool_name
+    node_count = var.node_count
+    vm_size    = var.vm_size
+
+    upgrade_settings {
+      max_surge                     = "10%"
+      drain_timeout_in_minutes      = 0
+      node_soak_duration_in_minutes = 0
+    }
   }
-node_provisioning_profile {
+
+  node_provisioning_profile {
     mode = "Manual"
   }
+
   identity {
     type = "SystemAssigned"
   }
 
-  azure_active_directory_role_based_access_control{
-    azure_rbac_enabled = true
+  azure_active_directory_role_based_access_control {
+    azure_rbac_enabled     = true
     admin_group_object_ids = var.admin_group_object_id
-    
-
   }
 
-network_profile {
-    network_plugin = "azure"
+  network_profile {
+    network_plugin      = "azure"
     network_plugin_mode = "overlay"
-    service_cidr   = "10.1.0.0/16"
-    dns_service_ip = "10.1.0.10"
-}
-local_account_disabled = true
+    service_cidr        = var.service_cidr
+    dns_service_ip      = var.dns_service_ip
+  }
 
+  local_account_disabled = true
 }
